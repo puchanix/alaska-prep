@@ -63,6 +63,13 @@
   .primary:active{transform:scale(.985);}
   .primary.quiet{background:var(--slab); color:var(--paper); border:1px solid var(--line);}
   .primary.go{background:var(--work);}
+  .primary.broke{background:var(--danger); color:#1A0F0C; min-height:84px; font-size:30px;}
+  .qmark{flex:none; width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--slab2); color:var(--dim); font-weight:700; font-size:16px;}
+  .qmark.on{background:var(--paper); color:var(--ink); border-color:var(--paper);}
+  .bar{height:10px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:6px;}
+  .bar i{display:block; height:100%; background:var(--signal); border-radius:999px;}
+  .result{font-family:var(--display); font-size:30px; font-weight:700; line-height:1.1; margin-top:8px;}
+  .result.broke{color:var(--danger);} .result.held{color:var(--work);}
   .primary[disabled]{background:var(--slab); color:var(--dim); border:1px solid var(--line);}
   .ghost{
     display:flex; align-items:center; justify-content:center; text-align:center;
@@ -739,6 +746,7 @@
     L.stage = "rest"; L.next = L.i + 1; startTimer(L.restSec, from);
   }
   function expire(){
+    if(L.type === "descent"){ dExpire(); saveLive(); return; }
     const from = L.t.endsAt;
     const quiet = Date.now() - from > 1500;          // caught up after a lock: don't fire a burst of beeps
     if(L.stage === "lead"){ if(!quiet) beepGo(); beginWork(from); }
@@ -798,12 +806,26 @@
     saveLive(); render();
   }
   function toFeedback(){
+    if(L.type === "descent" && L.workSec == null) L.workSec = Math.round(dWorkNow() / 1000);
     L.stage = "feedback"; L.t = null; L.endedAt = Date.now();
     L.fb = L.fb || { effort: null, fatigue: null, knee: null, back: null, notes: "" };
     keepAwake(false); beepDone();
   }
   const setsDone = res => Object.values(res).filter(r => !r.skipped && Object.keys(r.parts).length).length;
   function saveSession(){
+    if(L.type === "descent"){
+      D.log.unshift({
+        id: uid(), type: "descent", date: L.date, week: L.week, phase: L.phase, mode: L.mode,
+        startedAt: L.startedAt, endedAt: L.endedAt || Date.now(), params: clone(L.params),
+        items: L.params.items.map(id => L.names[id] ? L.names[id].name : id),
+        plannedWorkSec: plannedWork(L.segs), workSec: L.workSec, formBrokeAt: L.formBrokeAt,
+        completed: L.completed, roundsDone: dRoundsDone(), feedback: clone(L.fb), nextDay: null
+      });
+      persist();
+      L = null; saveLive();
+      S.view = "log"; toast("Session saved"); render(); window.scrollTo(0, 0);
+      return;
+    }
     const sets = L.steps.map((st, idx) => L.results[idx] ? clone(L.results[idx]) : { ex: st.ex, set: st.set, skipped: true, parts: {} });
     const entry = {
       id: uid(), type: "strength", date: L.date, week: L.week, phase: L.phase, taper: L.taper,
@@ -818,12 +840,91 @@
   }
   function endSession(){
     if(L.stage === "feedback") return;
+    if(L.type === "descent"){
+      if(dWorkNow() < 1000){
+        if(confirm("Discard this session? Nothing has been logged yet.")){ L = null; saveLive(); keepAwake(false); render(); }
+      } else if(confirm("End now? Work so far is logged as stopped early, not as form breakdown.")){ toFeedback(); saveLive(); render(); }
+      return;
+    }
     const n = setsDone(L.results);
     if(!n){
       if(confirm("Discard this session? Nothing has been logged yet.")){ L = null; saveLive(); keepAwake(false); render(); }
       return;
     }
     if(confirm("End the session now? The " + n + " set" + (n === 1 ? "" : "s") + " done so far are kept.")){ toFeedback(); saveLive(); render(); }
+  }
+
+  /* ================= descent simulation =================
+     A precomputed timeline of segments (work / transition / rest). Each segment is a wall-clock timer,
+     so catchUp() replays it after a lock just like the strength runner. The key metric is work time
+     until form broke. */
+  function buildDescent(mode){
+    const ds = D.program.sessions.descent, segs = [];
+    if(mode === "circuit"){
+      const c = ds.circuit;
+      for(let r = 1; r <= c.rounds; r++){
+        c.items.forEach((id, j) => {
+          segs.push({ k: "work", ex: id, sec: c.workSec, round: r });
+          if(j < c.items.length - 1 && c.transitionSec > 0) segs.push({ k: "trans", ex: c.items[j + 1], sec: c.transitionSec, round: r });
+        });
+        if(r < c.rounds && c.restSec > 0) segs.push({ k: "rest", ex: c.items[0], sec: c.restSec, round: r + 1 });
+      }
+    } else {
+      const c = ds.continuous, seg = c.segmentSec || 30;
+      let left = c.durationSec, j = 0;
+      while(left > 0){
+        const sec = Math.min(seg, left);
+        segs.push({ k: "work", ex: c.items[j % c.items.length], sec, round: null });
+        left -= sec; j++;
+      }
+    }
+    return segs;
+  }
+  function startDescent(mode){
+    const ds = D.program.sessions.descent, segs = buildDescent(mode);
+    if(!segs.length){ toast("Nothing to do"); return; }
+    const st = statusOn(todayStr()), names = {};
+    segs.forEach(g => { const ex = exOf(g.ex); names[g.ex] = { name: ex.name, short: ex.short || ex.name, cue: ex.cue }; });
+    ds.mode = mode; persist(false);
+    unlockAudio();
+    L = {
+      type: "descent", mode, date: todayStr(), week: st.week || null, phase: st.phase,
+      startedAt: Date.now(), params: clone(mode === "circuit" ? ds.circuit : ds.continuous), names, segs,
+      si: -1, stage: "lead", t: null, workMs: 0, workSec: null, formBrokeAt: null, completed: false, fb: null
+    };
+    S.prep = null; S.howto = false;
+    startTimer(LEAD_SEC);
+    keepAwake(true); saveLive(); render();
+  }
+  const plannedWork = segs => segs.filter(g => g.k === "work").reduce((a, g) => a + g.sec, 0);
+  function dWorkNow(){
+    const g = L.segs[L.si];
+    return L.workMs + (L.t && L.stage === "seg" && g && g.k === "work" ? (L.t.totalMs - remaining()) : 0);
+  }
+  function dEnter(i, from, quiet){
+    L.si = i; L.stage = "seg";
+    const g = L.segs[i];
+    startTimer(g.sec, from);
+    if(!quiet){ if(g.k === "work") beepGo(); else beepHold(); }
+  }
+  function dExpire(){
+    const from = L.t.endsAt, quiet = Date.now() - from > 1500;
+    if(L.stage === "lead"){ dEnter(0, from, quiet); return; }
+    const g = L.segs[L.si];
+    if(g.k === "work") L.workMs += g.sec * 1000;
+    if(L.si >= L.segs.length - 1){ L.t = null; L.completed = true; toFeedback(); return; }
+    dEnter(L.si + 1, from, quiet);
+  }
+  function formBroke(){
+    L.formBrokeAt = Math.round(dWorkNow() / 1000);
+    toFeedback();
+  }
+  function dRoundsDone(){
+    if(L.mode !== "circuit") return null;
+    const last = L.completed ? L.segs.length : L.si;
+    let n = 0;
+    for(let i = 0; i < last; i++){ const g = L.segs[i], nx = L.segs[i + 1]; if(g.k === "work" && (!nx || nx.round !== g.round)) n++; }
+    return n;
   }
 
   /* ================= view state ================= */
@@ -888,15 +989,18 @@
       body = '<button class="primary" data-act="prep">Start strength</button>';
     } else if(planned === "strength"){
       body = '<div class="sub" style="margin-top:0"><span style="color:var(--work)">&#10003; Done.</span> Nice work.</div>';
+    } else if(planned === "descent" && !loggedOn(t, "descent")){
+      body = '<button class="primary" data-act="prepd">Start descent</button>';
     } else if(planned === "descent"){
-      body = '<button class="primary" disabled>Descent runner comes in step 2</button>';
+      body = '<div class="sub" style="margin-top:0"><span style="color:var(--work)">&#10003; Done.</span> Nice work.</div>';
     } else {
       body = '<div class="sub" style="margin-top:0">' + (st.phase === "before"
         ? "Pump foiling, MTB and easy aerobic work count. Activity logging arrives in a later step."
         : "Easy aerobic activity or ski days can be logged here soon.") + '</div>';
     }
-    const extra = planned !== "strength"
-      ? '<button class="link" data-act="prep" style="margin-top:6px">Start a strength session anyway</button>' : "";
+    const extra = '<div style="display:flex;flex-wrap:wrap;gap:0 18px;margin-top:6px">' +
+      (planned !== "strength" ? '<button class="link" data-act="prep">Strength session anyway</button>' : "") +
+      (planned !== "descent" ? '<button class="link" data-act="prepd">Descent session anyway</button>' : "") + '</div>';
     const title = planned ? P.sessions[planned].name : (st.phase === "before" ? "No program yet" : "Rest day");
 
     let days = "";
@@ -920,7 +1024,45 @@
   }
 
   /* ================= views: session prep ================= */
+  function qButton(id){
+    return '<button class="qmark ' + (S.prep.how === id ? "on" : "") + '" data-act="prephow" data-id="' + id + '" aria-label="How to do it">?</button>';
+  }
+  function descentSummary(mode){
+    const ds = D.program.sessions.descent, segs = buildDescent(mode);
+    const names = ids => ids.map(id => exOf(id).name).join(", ");
+    if(mode === "circuit"){
+      const c = ds.circuit;
+      return c.rounds + " rounds of " + names(c.items) + ". " + secLabel(c.workSec) + " each, " + c.transitionSec + " sec to switch, " +
+        secLabel(c.restSec) + " rest between rounds. " + secLabel(plannedWork(segs)) + " of work in about " + durLabel(segs.reduce((a, g) => a + g.sec, 0)) + ".";
+    }
+    const c = ds.continuous;
+    return secLabel(c.durationSec) + " of unbroken work, switching every " + secLabel(c.segmentSec || 30) + " between " + names(c.items) + ". No rest.";
+  }
+  function descentPrepView(){
+    const ds = D.program.sessions.descent, mode = S.prep.mode;
+    const items = (mode === "circuit" ? ds.circuit.items : ds.continuous.items);
+    const rows = items.map(id => {
+      const ex = exOf(id);
+      return '<div class="row"><div class="rowhead"><div style="flex:1"><div class="rowname">' + esc(ex.name) + '</div>' +
+        '<div class="cue">' + esc(ex.cue) + '</div></div>' + qButton(id) + '</div>' +
+        (S.prep.how === id ? howtoPanel(ex, true) : "") + '</div>';
+    }).join("");
+    return header() +
+      '<p class="eyebrow" style="margin-top:0">Descent simulation</p>' +
+      '<div class="btnrow" style="margin-top:0">' +
+        '<button class="ghost ' + (mode === "circuit" ? "sel" : "") + '" data-act="pmode" data-v="circuit">Circuit</button>' +
+        '<button class="ghost ' + (mode === "continuous" ? "sel" : "") + '" data-act="pmode" data-v="continuous">Continuous</button></div>' +
+      '<div class="card" style="margin-top:10px"><div style="font-size:14px">' + descentSummary(mode) + '</div></div>' +
+      '<div class="card" style="padding-top:2px;padding-bottom:2px">' + rows + '</div>' +
+      '<div class="note" style="margin-top:12px"><b>Stop at form breakdown, not exhaustion.</b> Keep good movement as your legs tire. ' +
+        'The moment knees cave, you lose depth control or you start to sag, tap <b>Form broke</b>. That time is the number that counts.</div>' +
+      '<div class="fine">Change the timings in Plan.</div>' +
+      '<div style="height:16px"></div>' +
+      '<button class="primary" data-act="start">Start ' + mode + '</button>' +
+      '<div style="text-align:center"><button class="link" data-act="prepcancel">Cancel</button></div>';
+  }
   function prepView(){
+    if(S.prep.type === "descent") return descentPrepView();
     const P = D.program, off = S.prep.off;
     const b = buildStrength(off);
     const rows = P.sessions.strength.items.map(id => {
@@ -931,7 +1073,8 @@
       return '<div class="row ' + (on ? "" : "off") + '"><div class="rowhead">' +
         '<button class="check ' + (on ? "on" : "") + '" data-act="prepoff" data-id="' + id + '" aria-label="Include ' + esc(ex.name) + '">' + (on ? "&#10003;" : "") + '</button>' +
         '<div style="flex:1"><div class="rowname">' + esc(ex.name) + (ex.optional ? '<span class="badge">Optional</span>' : "") + '</div>' +
-        '<div class="tags">' + exTags(Object.assign({}, ex, { sets }), false) + '</div></div></div></div>';
+        '<div class="tags">' + exTags(Object.assign({}, ex, { sets }), false) + '</div></div>' + qButton(id) + '</div>' +
+        (S.prep.how === id ? howtoPanel(ex, true) : "") + '</div>';
     }).join("");
     const ptCue = D.settings.ptCueSeen ? "" :
       '<div class="note" style="margin-bottom:14px"><b>Effort versus pain.</b> Burning, heavy or tired muscles are expected and fine. ' +
@@ -1038,7 +1181,59 @@
       '<button class="chipbtn ' + (r.pain ? "on" : "") + '" data-act="flag" data-f="pain">Pain</button></div></div>';
   }
 
+  function descentStrip(){
+    if(L.mode === "continuous"){
+      const total = plannedWork(L.segs), w = L.stage === "feedback" ? L.workSec * 1000 : dWorkNow();
+      return '<div class="seq"><div class="sess-top"><span>Work <b id="worktotal" style="color:var(--paper)">' + mmss(w) + '</b> of ' + mmss(total * 1000) + '</span>' +
+        (D.program.sessions.descent.continuous.goalSec ? '<span>Goal ' + secLabel(D.program.sessions.descent.continuous.goalSec) + '</span>' : "") + '</div>' +
+        '<div class="bar"><i id="workbar" style="width:' + Math.min(100, w / total / 10).toFixed(1) + '%"></i></div></div>';
+    }
+    const rounds = L.params.rounds, items = L.params.items;
+    let h = "";
+    for(let r = 1; r <= rounds; r++){
+      h += '<div class="seqline"><div class="seqname">Round ' + r + '</div><div class="seqsets">' + items.map((id, j) => {
+        const idx = L.segs.findIndex(g => g.k === "work" && g.round === r && g.ex === id);
+        let cls = "";
+        if(L.stage === "seg" && idx === L.si) cls = "now";
+        else if(L.completed || (L.si > idx && L.stage !== "lead") ) cls = "done";
+        return '<span class="s ' + cls + '" style="padding:0 6px">' + esc((L.names[id] || {}).short || id) + '</span>';
+      }).join("") + '</div></div>';
+    }
+    return '<div class="seq">' + h + '</div>';
+  }
+  function descentView(){
+    if(L.stage === "feedback") return feedbackView();
+    const top = '<div class="sess-top"><span id="elapsed">' + durLabel(Math.round((Date.now() - L.startedAt) / 1000)) + '</span><span>' +
+      (L.mode === "circuit" ? "Round " + (L.stage === "lead" ? 1 : L.segs[L.si].round) + " of " + L.params.rounds : "Continuous") + '</span></div>';
+    const nm = id => esc((L.names[id] || {}).name || id);
+    let mid;
+    if(L.stage === "lead"){
+      mid = '<div class="exname">Get set</div><div class="exsub">First: <b>' + nm(L.segs[0].ex) + '</b></div>' +
+        dialHTML("", "Starting", "Get ready") + '<button class="primary" data-act="now">Start now</button>';
+    } else {
+      const g = L.segs[L.si], nx = L.segs[L.si + 1];
+      const then = nx ? (nx.k === "work" ? "Then: " + nm(nx.ex) : nx.k === "rest" ? "Then: rest" : "Then: switch to " + nm(nx.ex)) : "Last one";
+      if(g.k === "work"){
+        mid = '<div class="exname">' + nm(g.ex) + '</div><div class="exsub">' + esc((L.names[g.ex] || {}).cue || "") + '</div>' +
+          '<div class="exsub" style="margin-top:4px"><b>' + then + '</b></div>' +
+          dialHTML(g.ex === "wallsit" ? "hold" : "", L.mode === "circuit" ? "Round " + g.round : "Keep moving", "Work");
+      } else if(g.k === "trans"){
+        mid = '<div class="exname">Switch</div><div class="exsub">Next: <b>' + nm(g.ex) + '</b>. Starts on the beep.</div>' +
+          dialHTML("rest", "Switch", "Transition");
+      } else {
+        mid = '<div class="exname">Rest</div><div class="exsub">Round ' + g.round + ' starts with <b>' + nm(g.ex) + '</b>.</div>' +
+          dialHTML("rest", "Rest", "Until next round");
+      }
+      mid += (g.k === "rest" ? "" : '<button class="primary broke" data-act="formbroke">Form broke</button>') +
+        '<div class="btnrow"><button class="ghost" data-act="' + (L.t.running ? "pause" : "resume") + '">' + (L.t.running ? "Pause" : "Resume") + '</button>' +
+        (g.k !== "work" ? '<button class="ghost" data-act="now">Go now</button>' : "") + '</div>';
+    }
+    return top + mid + descentStrip() +
+      '<div class="sessfoot"><button class="link" data-act="sound">Sound ' + (D.settings.sound ? "on" : "off") + '</button>' +
+      '<button class="link warn" data-act="end">End session</button></div>';
+  }
   function sessionView(){
+    if(L.type === "descent") return descentView();
     if(L.stage === "feedback") return feedbackView();
     const st = curStep(), ex = curEx();
     let mid = "";
@@ -1093,10 +1288,18 @@
     for(let n = from; n <= 10; n++) h += '<button class="' + (v === n ? "on" : "") + '" data-act="fb" data-f="' + field + '" data-v="' + n + '">' + n + '</button>';
     return '<div class="scale' + (from === 1 ? " ten" : "") + '">' + h + '</div>';
   }
+  function descentResult(x){
+    const planned = x.plannedWorkSec != null ? x.plannedWorkSec : plannedWork(x.segs);
+    if(x.formBrokeAt != null) return '<div class="result broke">Form broke at ' + mmss(x.formBrokeAt * 1000) + '</div>';
+    if(x.completed) return '<div class="result held">Form held for the full ' + mmss(planned * 1000) + '</div>';
+    return '<div class="result">Stopped at ' + mmss((x.workSec || 0) * 1000) + ' of ' + mmss(planned * 1000) + '</div>';
+  }
   function feedbackView(){
-    const n = setsDone(L.results), mins = Math.round(((L.endedAt || Date.now()) - L.startedAt) / 60000);
+    const n = L.type === "strength" ? setsDone(L.results) : 0, mins = Math.round(((L.endedAt || Date.now()) - L.startedAt) / 60000);
     return '<div class="exname" style="margin-top:4px">Session done</div>' +
-      '<div class="exsub">' + n + ' of ' + L.steps.length + ' sets &middot; ' + mins + ' min</div>' +
+      (L.type === "descent"
+        ? descentResult(L) + '<div class="exsub">' + (L.mode === "circuit" ? dRoundsDone() + " of " + L.params.rounds + " rounds &middot; " : "Continuous &middot; ") + mins + ' min total</div>'
+        : '<div class="exsub">' + n + ' of ' + L.steps.length + ' sets &middot; ' + mins + ' min</div>') +
       '<div class="fbq"><div class="q">Overall effort</div><div class="h">1 easy, 10 maximal</div>' + scale("effort", 1) + '</div>' +
       '<div class="fbq"><div class="q">Leg muscle fatigue</div><div class="h">1 fresh, 10 wrecked</div>' + scale("fatigue", 1) + '</div>' +
       '<div class="fbq"><div class="q">Knee discomfort</div><div class="h">0 none</div>' + scale("knee", 0) + '</div>' +
@@ -1104,7 +1307,7 @@
       '<div class="fbq"><div class="q">Notes</div><textarea class="notes" id="fbnotes" placeholder="Anything worth remembering">' + esc(L.fb.notes || "") + '</textarea></div>' +
       '<div style="height:14px"></div><button class="primary" data-act="savesess">Save to log</button>' +
       '<div style="text-align:center"><button class="link warn" data-act="discard">Discard session</button></div>' +
-      seqStrip();
+      (L.type === "descent" ? "" : seqStrip());
   }
 
   /* ================= views: plan ================= */
@@ -1159,8 +1362,9 @@
     const P = D.program, gap = strengthGapWarning();
     const wkOpts = [8, 10, 12, 15].map(w => '<option value="' + w + '"' + (P.weeks === w ? " selected" : "") + '>' + w + ' weeks</option>').join("");
     const strength = P.sessions.strength.items.map(id => exRow(P.exercises[id])).join("");
-    const c = P.sessions.descent.circuit;
+    const c = P.sessions.descent.circuit, cn = P.sessions.descent.continuous;
     const descent = c.items.map(id => P.exercises[id].name).join(", ");
+    const dTag = (m, f, cls, txt) => '<button class="tag ' + cls + '" data-act="dedit" data-m="' + m + '" data-f="' + f + '">' + txt + '</button>';
 
     return header() +
       '<p class="eyebrow" style="margin-top:0">Schedule</p>' +
@@ -1182,9 +1386,16 @@
         'Rest between sets: <button class="tag t-time" data-act="editrest">' + D.settings.restSec + ' sec</button></div>' +
       '<p class="eyebrow">Descent simulation</p>' +
       '<div class="card"><div class="rowname">Circuit, early weeks</div>' +
-        '<div class="cue">' + c.rounds + ' rounds of ' + esc(descent) + ', ' + c.workSec + ' sec each, ' + c.restSec + ' sec rest between rounds.</div>' +
-        '<div class="rowname" style="margin-top:12px">Continuous, later weeks</div>' +
-        '<div class="cue">Builds from 2 toward 6 minutes of unbroken work. Measured by time to form breakdown.</div></div>';
+        '<div class="cue">' + esc(descent) + '</div>' +
+        '<div class="tags">' + dTag("circuit", "rounds", "t-sets", c.rounds + " rounds") + dTag("circuit", "workSec", "t-time", secLabel(c.workSec) + " each") +
+          dTag("circuit", "transitionSec", "t-time", c.transitionSec + "s switch") + dTag("circuit", "restSec", "t-time", secLabel(c.restSec) + " rest") + '</div>' +
+        '<div class="rowname" style="margin-top:14px">Continuous, later weeks</div>' +
+        '<div class="cue">' + esc(P.sessions.descent.continuous.items.map(id => P.exercises[id].name).join(", ")) + ', no rest. Measured by time to form breakdown.</div>' +
+        '<div class="tags">' + dTag("continuous", "durationSec", "t-time", secLabel(cn.durationSec) + " total") +
+          dTag("continuous", "segmentSec", "t-time", "switch every " + secLabel(cn.segmentSec || 30)) +
+          dTag("continuous", "goalSec", "t-work", "goal " + secLabel(cn.goalSec)) + '</div>' +
+        '<div class="btnrow"><button class="ghost" data-act="dmode">Default: ' + P.sessions.descent.mode + '</button></div>' +
+        '<div class="fine">Tap any value to change it. How-to notes are behind the ? buttons when you start a session.</div></div>';
   }
 
   /* ================= views: log ================= */
@@ -1204,25 +1415,38 @@
       (sets.some(s => s.pain) ? ' <span style="color:var(--danger)">pain</span>' : "");
     return txt + flags;
   }
-  function entryHTML(e){
-    if(e.type !== "strength"){
-      return '<div class="entry"><div class="entry-date">' + esc(e.title || e.type) + '</div><div class="entry-meta">' + fmtDay(e.date) + '</div></div>';
-    }
-    const done = setsDone(Object.assign({}, e.sets)), planned = e.sets.length;
+  function fbHTML(e){
     const fb = e.feedback || {};
     const fbBits = [["Effort", fb.effort], ["Fatigue", fb.fatigue], ["Knee", fb.knee], ["Back", fb.back]]
       .filter(([, v]) => v != null).map(([k, v]) => k + " <b>" + v + "</b>").join(" &middot; ");
     const nd = e.nextDay ? (e.nextDay.ok ? "Next day: all normal" : e.nextDay.skipped ? "" : "Next day: " + esc(e.nextDay.note || "something off")) : "";
+    return (fbBits ? '<div class="entry-meta" style="margin-top:8px">' + fbBits + '</div>' : "") +
+      (fb.notes ? '<div style="font-size:14px;margin-top:6px">' + esc(fb.notes) + '</div>' : "") +
+      (nd ? '<div class="entry-meta" style="margin-top:6px">' + nd + '</div>' : "");
+  }
+  function entryHTML(e){
+    if(e.type === "descent"){
+      const p = e.params || {};
+      const how = e.mode === "circuit" ? (e.roundsDone + " of " + p.rounds + " rounds, " + secLabel(p.workSec) + " blocks")
+        : "continuous, switching every " + secLabel(p.segmentSec || 30);
+      return '<div class="entry"><div class="entry-top"><div>' +
+          '<div class="entry-date">Descent &middot; ' + fmtDay(e.date) + '</div>' +
+          '<div class="entry-meta">' + (e.week ? "Week " + e.week + " &middot; " : "") + how + '</div></div>' +
+          '<button class="del" data-act="del" data-id="' + e.id + '" aria-label="Delete entry">&times;</button></div>' +
+        descentResult(e).replace('class="result', 'style="font-size:24px" class="result') +
+        '<div class="entry-meta">' + esc((e.items || []).join(", ")) + '</div>' + fbHTML(e) + '</div>';
+    }
+    if(e.type !== "strength"){
+      return '<div class="entry"><div class="entry-date">' + esc(e.title || e.type) + '</div><div class="entry-meta">' + fmtDay(e.date) + '</div></div>';
+    }
+    const done = setsDone(Object.assign({}, e.sets)), planned = e.sets.length;
     return '<div class="entry"><div class="entry-top"><div>' +
         '<div class="entry-date">Strength &middot; ' + fmtDay(e.date) + '</div>' +
         '<div class="entry-meta">' + (e.week ? "Week " + e.week + " &middot; " : "") + durLabel(Math.round((e.endedAt - e.startedAt) / 1000)) + ' &middot; ' + done + '/' + planned + ' sets</div></div>' +
         '<button class="del" data-act="del" data-id="' + e.id + '" aria-label="Delete entry">&times;</button></div>' +
       (done < planned ? '<div class="partial">Partial</div>' : "") +
       '<div class="lines">' + e.exercises.map(ex => '<div><span class="n">' + esc(ex.short || ex.name) + '</span><span>' + setSummary(e, ex) + '</span></div>').join("") + '</div>' +
-      (fbBits ? '<div class="entry-meta" style="margin-top:8px">' + fbBits + '</div>' : "") +
-      (fb.notes ? '<div style="font-size:14px;margin-top:6px">' + esc(fb.notes) + '</div>' : "") +
-      (nd ? '<div class="entry-meta" style="margin-top:6px">' + nd + '</div>' : "") +
-    '</div>';
+      fbHTML(e) + '</div>';
   }
   function logView(){
     const body = D.log.length ? D.log.map(entryHTML).join("")
@@ -1299,6 +1523,11 @@
         if(ph === 0) cueDown(); else if(ph === 3) cueUp(); else cueTick();
       }
       return;
+    }
+    if(L.type === "descent" && L.stage !== "feedback"){
+      const w = dWorkNow(), wt = document.getElementById("worktotal"), wb = document.getElementById("workbar");
+      if(wt) wt.textContent = mmss(w);
+      if(wb) wb.style.width = Math.min(100, w / plannedWork(L.segs) / 10).toFixed(1) + "%";
     }
     if(!L.t) return;
     const left = remaining();
@@ -1407,6 +1636,7 @@
       else if(act === "flag"){ const r = L.results[L.i]; r[el.dataset.f] = !r[el.dataset.f]; }
       else if(act === "fb"){ const v = Number(el.dataset.v); L.fb[el.dataset.f] = L.fb[el.dataset.f] === v ? null : v; }
       else if(act === "savesess"){ saveSession(); return; }
+      else if(act === "formbroke"){ formBroke(); }
       else if(act === "howto"){ S.howto = !S.howto; render(); return; }
       else if(act === "discard"){
         if(confirm("Discard this whole session? It won't be logged.")){ L = null; saveLive(); keepAwake(false); render(); }
@@ -1419,11 +1649,26 @@
 
     // ---- everything else ----
     if(act === "tab"){ S.view = el.dataset.v; S.pasteOpen = false; S.openEx = null; render(); window.scrollTo(0, 0); }
-    else if(act === "prep"){ S.prep = { off: {} }; render(); window.scrollTo(0, 0); }
+    else if(act === "prep"){ S.prep = { type: "strength", off: {}, how: null }; render(); window.scrollTo(0, 0); }
+    else if(act === "prepd"){ S.prep = { type: "descent", mode: D.program.sessions.descent.mode || "circuit", how: null }; render(); window.scrollTo(0, 0); }
+    else if(act === "pmode"){ S.prep.mode = el.dataset.v; S.prep.how = null; render(); }
+    else if(act === "prephow"){ S.prep.how = S.prep.how === el.dataset.id ? null : el.dataset.id; render(); }
+    else if(act === "howto"){ if(S.prep){ S.prep.how = null; render(); } }
+    else if(act === "dmode"){ const ds = D.program.sessions.descent; ds.mode = ds.mode === "circuit" ? "continuous" : "circuit"; persist(); render(); }
+    else if(act === "dedit"){
+      const spec = {
+        rounds: ["Rounds", 1, 10, 1], workSec: ["Seconds per exercise", 10, 600, 1], transitionSec: ["Seconds to switch between exercises", 0, 60, 1],
+        restSec: ["Rest between rounds, seconds", 0, 600, 1], durationSec: ["Total work, seconds", 30, 1800, 1],
+        segmentSec: ["Switch exercise every, seconds", 10, 300, 1], goalSec: ["Goal, seconds of work", 60, 1800, 1]
+      }[el.dataset.f];
+      const obj = D.program.sessions.descent[el.dataset.m], f = el.dataset.f;
+      const n = askNumber(spec[0], obj[f] == null && f === "segmentSec" ? 30 : obj[f], spec[1], spec[2]);
+      if(n !== undefined){ obj[f] = Math.round(n); persist(); render(); }
+    }
     else if(act === "prepoff"){ const id = el.dataset.id; S.prep.off[id] = !S.prep.off[id]; render(); }
     else if(act === "prepcancel"){ S.prep = null; render(); }
     else if(act === "ptseen"){ D.settings.ptCueSeen = true; persist(false); render(); }
-    else if(act === "start"){ startStrength(S.prep.off); window.scrollTo(0, 0); }
+    else if(act === "start"){ if(S.prep.type === "descent") startDescent(S.prep.mode); else startStrength(S.prep.off); window.scrollTo(0, 0); }
     else if(act === "backup"){ saveBackup(); }
     else if(act === "copy"){ copyBackup(); }
     else if(act === "pasteopen"){ S.pasteOpen = !S.pasteOpen; render(); }
@@ -1559,12 +1804,12 @@
     if(!raw) return;
     try{
       const live = JSON.parse(raw);
-      if(!live || !live.steps || !live.rx) throw new Error("bad");
+      if(!live || !(live.type === "descent" ? live.segs : (live.steps && live.rx))) throw new Error("bad");
       L = live;
       if(L.stage !== "feedback"){
         if(Date.now() - L.startedAt > 6 * 3600 * 1000){
           // Abandoned long ago: keep what was done and go straight to the check-in.
-          if(setsDone(L.results)){ L.stage = "feedback"; L.t = null; L.endedAt = L.endedAt || Date.now(); L.fb = L.fb || { effort:null, fatigue:null, knee:null, back:null, notes:"" }; }
+          if(L.type === "descent" ? L.workMs > 0 : setsDone(L.results)){ L.stage = "feedback"; L.t = null; L.endedAt = L.endedAt || Date.now(); L.fb = L.fb || { effort:null, fatigue:null, knee:null, back:null, notes:"" }; }
           else L = null;
         } else { keepAwake(true); catchUp(); }
       }
