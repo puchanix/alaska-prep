@@ -990,10 +990,10 @@
 
   function todayView(){
     const t = todayStr(), st = statusOn(t), P = D.program;
+    const C = compliance();
     let status;
     if(st.phase === "before") status = 'Block starts <b>' + fmtDay(P.startDate) + '</b>, in ' + st.toStart + ' day' + (st.toStart === 1 ? "" : "s");
-    const C = compliance();
-    if(st.phase === "block") status = '<b>Week ' + st.week + '</b> of ' + P.weeks + (C && C.cur ? ' &middot; ' + weekCounts(C.cur) : "");
+    else if(st.phase === "block") status = '<b>Week ' + st.week + '</b> of ' + P.weeks + (C && C.cur ? ' &middot; ' + weekCounts(C.cur) : "");
     else if(st.phase === "taper") status = '<b>Taper</b> &middot; week ' + st.week + ' of ' + P.weeks;
     else if(st.phase === "done") status = 'Block finished';
     else status = 'Trip day has passed';
