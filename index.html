@@ -63,6 +63,14 @@
   .primary:active{transform:scale(.985);}
   .primary.quiet{background:var(--slab); color:var(--paper); border:1px solid var(--line);}
   .primary.go{background:var(--work);}
+  .indhead{display:flex; align-items:center; gap:10px;}
+  .indhead .rowname{flex:1;}
+  .tone{width:14px; height:14px; border-radius:50%; flex:none; background:var(--line); border:2px solid var(--dim);}
+  .tone.green{background:var(--work); border-color:var(--work);} .tone.yellow{background:var(--signal); border-color:var(--signal);} .tone.red{background:var(--danger); border-color:var(--danger);}
+  .indstate{font-family:var(--display); font-weight:700; font-size:18px; letter-spacing:.03em; text-transform:uppercase; color:var(--dim);}
+  .indstate.green{color:var(--work);} .indstate.yellow{color:var(--signal);} .indstate.red{color:var(--danger);}
+  .prompts{flex-wrap:wrap;} .prompts .ghost{flex:1 1 40%; min-height:46px; font-size:14px;}
+  select.wide{width:100%; margin-top:8px; font-family:var(--body); font-size:16px; color:var(--paper); background:var(--slab2); border:1px solid var(--line); border-radius:10px; padding:10px; min-height:46px;}
   .kinds{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
   .kinds .ghost{min-height:48px;}
   .inwrap{display:flex; align-items:center; gap:6px; flex:none;}
@@ -544,10 +552,6 @@
   }
   const loggedOn = (s, type) => D.log.some(e => e.date === s && e.type === type);
   function mondayOf(s){ const wd = parseYmd(s).getDay(); return addDays(s, -((wd + 6) % 7)); }
-  function strengthThisWeek(){
-    const mon = dayNum(mondayOf(todayStr()));
-    return D.log.filter(e => e.type === "strength" && dayNum(e.date) >= mon && dayNum(e.date) < mon + 7).length;
-  }
 
   /* ================= backup ================= */
   function backupDue(){
@@ -938,13 +942,14 @@
   }
 
   /* ================= view state ================= */
-  const S = { view: "today", pasteOpen: false, prep: null, openEx: null, howto: false, act: null };
+  const S = { view: "today", pasteOpen: false, prep: null, openEx: null, howto: false, act: null, ms: null, prompts: [] };
 
   /* ================= icons ================= */
   const ICON = {
     today: '<svg viewBox="0 0 24 24"><path d="M3 20l6.5-11 4 6.5 2.5-3.5L21 20z"/><path d="M8 11.5l1.5-2.5 1.6 2.6"/></svg>',
     plan:  '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
     log:   '<svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>',
+    progress: '<svg viewBox="0 0 24 24"><path d="M5 20v-7M12 20V6M19 20v-10"/></svg>',
     data:  '<svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 16v3h14v-3"/></svg>'
   };
 
@@ -987,7 +992,8 @@
     const t = todayStr(), st = statusOn(t), P = D.program;
     let status;
     if(st.phase === "before") status = 'Block starts <b>' + fmtDay(P.startDate) + '</b>, in ' + st.toStart + ' day' + (st.toStart === 1 ? "" : "s");
-    else if(st.phase === "block") status = '<b>Week ' + st.week + '</b> of ' + P.weeks + ' &middot; ' + strengthThisWeek() + ' of ' + P.days.strength.length + ' strength';
+    const C = compliance();
+    if(st.phase === "block") status = '<b>Week ' + st.week + '</b> of ' + P.weeks + (C && C.cur ? ' &middot; ' + weekCounts(C.cur) : "");
     else if(st.phase === "taper") status = '<b>Taper</b> &middot; week ' + st.week + ' of ' + P.weeks;
     else if(st.phase === "done") status = 'Block finished';
     else status = 'Trip day has passed';
@@ -1025,7 +1031,7 @@
           (did ? "&#10003;" : p === "strength" ? "STR" : p === "descent" ? "DSC" : "") + '</div></div>';
     }
 
-    return header() + problemAlert() + backupBanner() + nextDayCard() +
+    return header() + problemAlert() + backupBanner() + missedFlag(C) + nextDayCard() +
       '<div class="count">' + Math.max(0, st.toTrip) + '<small>days</small></div>' +
       '<div class="sub">to Alaska &middot; ' + fmtLong(P.tripDate) + '</div>' +
       '<div class="status">' + status + '</div>' +
@@ -1060,6 +1066,7 @@
         (S.prep.how === id ? howtoPanel(ex, true) : "") + '</div>';
     }).join("");
     return header() +
+      promptCards(descentPrompts(mode)) +
       '<p class="eyebrow" style="margin-top:0">Descent simulation</p>' +
       '<div class="btnrow" style="margin-top:0">' +
         '<button class="ghost ' + (mode === "circuit" ? "sel" : "") + '" data-act="pmode" data-v="circuit">Circuit</button>' +
@@ -1094,6 +1101,7 @@
       'mark it in the log, and skip it until it settles or a PT has looked at it.' +
       '<div class="btnrow"><button class="ghost" data-act="ptseen">Got it, don&rsquo;t show again</button></div></div>';
     return header() + ptCue +
+      promptCards(strengthPrompts()) +
       '<p class="eyebrow" style="margin-top:0">Strength session' + (b.taper ? " &middot; taper, one fewer set" : "") + '</p>' +
       '<div class="card" style="padding-top:2px;padding-bottom:2px">' + rows + '</div>' +
       '<div class="fine">Untick anything you want to leave out today. Rest ' + D.settings.restSec + ' sec between sets. Finish each set with about two good reps left.</div>' +
@@ -1415,6 +1423,347 @@
     S.act = null; S.view = "log"; toast("Saved"); render(); window.scrollTo(0, 0);
   }
 
+  /* ================= progress: metrics, milestones, indicators =================
+     Three separate indicators, never combined. Each compares only against milestones you set.
+     Only sets without form or pain flags count, so comparisons stay like for like. */
+  const IND = { strength: "Strength", endurance: "Leg endurance", conditioning: "Conditioning" };
+  const byWhenDesc = (a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : (b.startedAt || b.createdAt || 0) - (a.startedAt || a.createdAt || 0);
+  function metricInfo(mk){
+    const [type, arg] = mk.split(":"), P = D.program;
+    const exn = id => P.exercises[id] ? P.exercises[id].name : id;
+    switch(type){
+      case "load":       return { ind: "strength", label: "Weight on " + exn(arg), short: (P.exercises[arg] || {}).short || arg, unit: D.settings.units };
+      case "height":     return { ind: "strength", label: "Step-down height", short: "Step-down", unit: "in" };
+      case "hold":       return { ind: "endurance", label: "Wall sit hold", short: "Wall sit", unit: "sec" };
+      case "descent":    return { ind: "endurance", label: "Descent " + arg + ": time to form breakdown", short: "Descent " + arg, unit: "sec" };
+      case "foilBout":   return { ind: "conditioning", label: "Longest pump foil bout", short: "Foil bout", unit: "sec" };
+      case "foilActive": return { ind: "conditioning", label: "Pump foil active minutes", short: "Foil pumping", unit: "min" };
+      case "climbMin":   return { ind: "conditioning", label: "MTB hard climbing minutes", short: "MTB climbing", unit: "min" };
+      case "weekMin":    return { ind: "conditioning", label: "Activity minutes in 7 days", short: "7-day activity", unit: "min" };
+    }
+    return { ind: "strength", label: mk, short: mk, unit: "" };
+  }
+  function fmtVal(mk, v){
+    if(v == null) return "none";
+    const u = metricInfo(mk).unit;
+    if(u === "sec") return v >= 60 ? mmss(v * 1000) : v + " sec";
+    return (Math.round(v * 10) / 10) + " " + u;
+  }
+  function metricOptions(){
+    const P = D.program, out = [];
+    for(const id of P.sessions.strength.items){ const ex = P.exercises[id]; if(ex && ex.kind === "reps") out.push("load:" + id); }
+    if(P.exercises.stepdown) out.push("height");
+    if(P.exercises.wallsit) out.push("hold");
+    return out.concat(["descent:continuous", "descent:circuit", "foilBout", "foilActive", "climbMin", "weekMin"]);
+  }
+  const cleanSets = (e, id) => e.sets.filter(s => s.ex === id && !s.skipped && Object.keys(s.parts).length && !s.formSlipped && !s.pain);
+  function actMinutes(e){
+    const v = e.v || {};
+    if(e.kind === "foil") return v.totalMin || 0;
+    if(e.kind === "mtb") return v.rideMin || 0;
+    if(e.kind === "aerobic") return v.minutes || 0;
+    if(e.kind === "ski") return (v.hours || 0) * 60;
+    return 0;
+  }
+  // One value per logged session that measures this metric.
+  function points(mk){
+    const [type, arg] = mk.split(":"), out = [];
+    if(type === "weekMin"){
+      const acts = D.log.filter(e => e.type === "activity");
+      for(const d of [...new Set(acts.map(e => e.date))]){
+        const from = addDays(d, -6);
+        out.push({ date: d, value: acts.filter(e => e.date >= from && e.date <= d).reduce((a, e) => a + actMinutes(e), 0) });
+      }
+      return out.sort((a, b) => a.date < b.date ? -1 : 1);
+    }
+    for(const e of D.log){
+      let v = null;
+      if(e.type === "strength"){
+        if(type === "load"){
+          const ok = cleanSets(e, arg).filter(st => st.load != null && Object.values(st.parts).every(pt => pt.reps >= ((st.target || [0])[0])));
+          if(ok.length) v = Math.max(...ok.map(st => st.load));
+        } else if(type === "height"){
+          const snap = e.exercises.find(x => x.id === "stepdown");
+          if(cleanSets(e, "stepdown").length && snap && snap.heightIn != null) v = snap.heightIn;
+        } else if(type === "hold"){
+          const hs = cleanSets(e, "wallsit").flatMap(st => Object.values(st.parts).map(pt => pt.holdSec || 0));
+          if(hs.length) v = Math.max(...hs);
+        }
+      } else if(e.type === "descent" && type === "descent" && e.mode === arg){
+        if(e.formBrokeAt != null) v = e.formBrokeAt; else if(e.completed) v = e.workSec;
+      } else if(e.type === "activity"){
+        const a = e.v || {};
+        if(type === "foilBout" && e.kind === "foil" && a.longestSec) v = a.longestSec;
+        if(type === "foilActive" && e.kind === "foil" && a.activeMin) v = a.activeMin;
+        if(type === "climbMin" && e.kind === "mtb" && a.climbMin) v = a.climbMin;
+      }
+      if(v != null) out.push({ date: e.date, value: v });
+    }
+    return out.sort((a, b) => a.date < b.date ? -1 : 1);
+  }
+  function valueAt(mk, end, days = 14){
+    const from = addDays(end, -(days - 1));
+    let best = null;
+    for(const pt of points(mk)) if(pt.date >= from && pt.date <= end && (best == null || pt.value > best)) best = pt.value;
+    return best;
+  }
+  function achievedOn(m){ const pt = points(m.mk).find(x => x.value >= m.target); return pt ? pt.date : null; }
+  // Check-ins every two weeks from the block start, using normal sessions, never extra tests.
+  function checkins(){
+    const P = D.program, t = todayStr(), out = [];
+    for(let k = 1; k < 60; k++){ const d = addDays(P.startDate, 14 * k); if(d > t || d >= P.tripDate) break; out.push(d); }
+    return out;
+  }
+  function nextCheckin(){
+    const P = D.program, t = todayStr();
+    for(let k = 1; k < 60; k++){ const d = addDays(P.startDate, 14 * k); if(d >= P.tripDate) return null; if(d > t) return d; }
+    return null;
+  }
+  const RECENT = { strength: ["load:squat", "load:split", "height", "load:legcurl"], endurance: ["hold", "descent:circuit", "descent:continuous"], conditioning: ["weekMin", "foilBout", "climbMin"] };
+  function recentSummary(ind){
+    const t = todayStr();
+    const keys = [...new Set((D.program.milestones || []).map(m => m.mk).filter(k => metricInfo(k).ind === ind).concat(RECENT[ind]))];
+    const bits = keys.map(k => { const v = valueAt(k, t); return v == null ? null : metricInfo(k).short + " " + fmtVal(k, v); }).filter(Boolean);
+    return bits.length ? "Recent best: " + bits.join(" &middot; ") + "." : "No data yet.";
+  }
+  function indicator(ind){
+    const P = D.program, t = todayStr(), st = statusOn(t);
+    const ms = (P.milestones || []).filter(m => metricInfo(m.mk).ind === ind);
+    if(st.phase === "before") return { tone: "none", head: "Starts with the block",
+      reason: "The baseline comes from your normal sessions in the first two weeks after " + fmtDay(P.startDate) + ".",
+      next: ms.length ? "" : "You can set a milestone in Plan any time." };
+    const baseEnd = addDays(P.startDate, 13);
+    if(t <= baseEnd) return { tone: "none", head: "Establishing baseline", reason: "Until " + fmtDay(addDays(baseEnd, 1)) + ". " + recentSummary(ind),
+      next: "Train as planned. Nothing to judge yet." };
+    const list = ms.map(m => ({ m, at: achievedOn(m) }));
+    const win = list.filter(x => x.at && x.at < x.m.due && dayNum(t) - dayNum(x.at) <= 14).sort((a, b) => a.at < b.at ? 1 : -1)[0];
+    const open = list.filter(x => !x.at).sort((a, b) => a.m.due < b.m.due ? -1 : 1);
+    const active = open[0] && open[0].m;
+    if(win && !active){
+      const early = dayNum(win.m.due) - dayNum(win.at);
+      return { tone: "green", head: "Ahead",
+        reason: metricInfo(win.m.mk).label + " " + fmtVal(win.m.mk, win.m.target) + " met " + fmtDay(win.at) + ", " + early + " day" + (early === 1 ? "" : "s") + " early.",
+        next: active ? "Next milestone: " + metricInfo(active.mk).label.toLowerCase() + " " + fmtVal(active.mk, active.target) + " by " + fmtDay(active.due) + "." : "Set your next milestone in Plan." };
+    }
+    if(!active) return { tone: "none", head: ms.length ? "All milestones met" : "No milestone set", reason: recentSummary(ind),
+      next: "Add a milestone in Plan, with your PT if you can." };
+    const info = metricInfo(active.mk);
+    if(!points(active.mk).some(x => dayNum(t) - dayNum(x.date) < 28)) return { tone: "none", head: "Not enough data",
+      reason: "No sessions in the last four weeks measured " + info.label.toLowerCase() + ".", next: "Log a session that includes it." };
+    const best = valueAt(active.mk, t);
+    const last2 = checkins().filter(c => c >= active.due).slice(-2);
+    if(last2.length === 2 && last2.every(c => { const v = valueAt(active.mk, c); return v == null || v < active.target; })){
+      return { tone: "red", head: "Behind",
+        reason: info.label + " " + fmtVal(active.mk, active.target) + " was due " + fmtDay(active.due) + " and wasn't met at the last two check-ins. Best in the last 14 days: " + fmtVal(active.mk, best) + ".",
+        next: "Review the target with your PT, or lower it or move the date in Plan. Don't add extra training to catch up." };
+    }
+    if(win && t <= active.due){
+      const early = dayNum(win.m.due) - dayNum(win.at);
+      return { tone: "green", head: "Ahead",
+        reason: metricInfo(win.m.mk).label + " " + fmtVal(win.m.mk, win.m.target) + " met " + fmtDay(win.at) + ", " + early + " day" + (early === 1 ? "" : "s") + " early.",
+        next: active ? "Next milestone: " + metricInfo(active.mk).label.toLowerCase() + " " + fmtVal(active.mk, active.target) + " by " + fmtDay(active.due) + "." : "Set your next milestone in Plan." };
+    }
+    const nc = nextCheckin();
+    return { tone: "yellow", head: t > active.due ? "Past due" : "On track",
+      reason: info.label + ": best in the last 14 days " + fmtVal(active.mk, best) + ", target " + fmtVal(active.mk, active.target) + " by " + fmtDay(active.due) + ".",
+      next: t > active.due ? (nc ? "Next check-in " + fmtDay(nc) + ". Keep to the plan." : "Keep to the plan.") : "Keep to the plan. Increases come from the suggestions before each session." };
+  }
+
+  /* ================= compliance: sticking to the plan =================
+     A session counts in the calendar week it's done, so moving a day is fine. Missed sessions never roll forward. */
+  const countPlanned = (from, to, type) => { let n = 0; for(let d = from; d <= to; d = addDays(d, 1)) if(plannedOn(d) === type) n++; return n; };
+  const countLogged = (from, to, type) => D.log.filter(e => e.type === type && e.date >= from && e.date <= to).length;
+  const isPartial = e => e.type === "strength" ? setsDone(Object.assign({}, e.sets)) < e.sets.length : e.type === "descent" ? (!e.completed && e.formBrokeAt == null) : false;
+  function compliance(){
+    const P = D.program, t = todayStr(), st = statusOn(t);
+    if(st.phase === "before") return null;
+    const lastDay = addDays(P.tripDate, -1), curW = st.week ? Math.min(st.week, P.weeks) : P.weeks;
+    const weeks = [];
+    for(let w = 1; w <= curW; w++){
+      const from = addDays(P.startDate, (w - 1) * 7);
+      let to = addDays(from, 6); if(to > lastDay) to = lastDay;
+      weeks.push({ w, from, to, cur: w === st.week && st.phase !== "after",
+        sP: countPlanned(from, to, "strength"), sD: countLogged(from, to, "strength"),
+        dP: countPlanned(from, to, "descent"), dD: countLogged(from, to, "descent"),
+        part: D.log.filter(e => e.date >= from && e.date <= to && isPartial(e)).length,
+        acts: D.log.filter(e => e.type === "activity" && e.date >= from && e.date <= to) });
+    }
+    const past = weeks.filter(x => !x.cur);
+    const sum = f => past.reduce((a, x) => a + f(x), 0);
+    const from14 = addDays(t, -13);
+    const missed = Math.max(0, countPlanned(from14 < P.startDate ? P.startDate : from14, addDays(t, -1), "strength") - countLogged(from14, t, "strength"));
+    return { weeks, cur: weeks.find(x => x.cur) || null,
+      tot: { sD: sum(x => Math.min(x.sD, x.sP)), sP: sum(x => x.sP), dD: sum(x => Math.min(x.dD, x.dP)), dP: sum(x => x.dP), part: sum(x => x.part) },
+      missed };
+  }
+  const missedFlag = C => C && C.missed >= 2
+    ? '<div class="alert" style="margin-bottom:14px"><b>' + C.missed + ' strength sessions missed in the last 14 days.</b> Do your next scheduled session as planned. Don&rsquo;t double up to catch up.</div>' : "";
+  function weekCounts(x){
+    return "Strength " + x.sD + "/" + x.sP + (x.dP || x.dD ? " &middot; Descent " + x.dD + "/" + x.dP : "");
+  }
+
+  /* ================= progression prompts =================
+     Offered, never applied silently. Nothing in weeks 1-2 or the taper. No increase after pain,
+     a form flag or an incomplete set; only "make easier" or "keep". */
+  const sessionPain = e => { const f = e.feedback || {}; return (f.knee != null && f.knee >= 3) || (f.back != null && f.back >= 3); };
+  function askLoad(ex, label, pre){
+    const raw = prompt(ex.name + ": " + label + " in " + D.settings.units, pre);
+    if(raw === null) return false;
+    const n = Number(raw.trim());
+    if(raw.trim() === "" || !isFinite(n) || n < 0){ toast("Not a number"); return false; }
+    ex.load = n; return true;
+  }
+  function easierOf(ex){
+    if(ex.heightIn != null && ex.heightIn > 2) return { label: "step " + (ex.heightIn - 1) + " in", apply: () => { ex.heightIn -= 1; return true; } };
+    if(ex.kind === "reps" && ex.load > 0) return { label: "lower weight", apply: () => askLoad(ex, "lower weight", Math.max(0, ex.load - 5)) };
+    if(ex.kind === "reps" && ex.sets > 1) return { label: (ex.sets - 1) + " set" + (ex.sets - 1 === 1 ? "" : "s"), apply: () => { ex.sets -= 1; return true; } };
+    if(ex.kind === "reps") return { label: "fewer reps", apply: () => { ex.reps = [Math.max(1, ex.reps[0] - 2), Math.max(1, ex.reps[1] - 2)]; return true; } };
+    if(ex.kind === "hold" && ex.holdSec > 10) return { label: (ex.holdSec - 5) + "s hold", apply: () => { ex.holdSec -= 5; return true; } };
+    return null;
+  }
+  function upReps(ex){
+    if(ex.heightIn != null) return { label: "raise the step", apply: () => { const n = askNumber(ex.name + ": new step height in inches", ex.heightIn + 1, 1, 36); if(n === undefined) return false; ex.heightIn = Math.round(n); return true; } };
+    if(ex.load != null) return { label: "more weight", apply: () => askLoad(ex, "new weight", ex.load) };
+    return { label: repsLabel([ex.reps[0] + 2, ex.reps[1] + 2]) + " reps", apply: () => { ex.reps = [ex.reps[0] + 2, ex.reps[1] + 2]; return true; } };
+  }
+  function strengthPrompts(){
+    const P = D.program, st = statusOn(todayStr()), out = [];
+    if(st.phase !== "block" || st.week < 3) return out;
+    const firstFour = P.sessions.strength.items.filter(id => P.exercises[id] && P.exercises[id].kind === "reps").slice(0, 4);
+    for(const id of P.sessions.strength.items){
+      const ex = P.exercises[id];
+      if(!ex || !isOn(ex) || ex.kind === "time") continue;
+      const e = D.log.filter(x => x.type === "strength" && x.exercises.some(y => y.id === id)).sort(byWhenDesc)[0];
+      if(!e) continue;
+      const rec = (P.prompts || {})[id];
+      if(rec && rec.basis === e.id) continue;
+      const sets = e.sets.filter(x => x.ex === id), done = sets.filter(x => !x.skipped && Object.keys(x.parts).length);
+      if(!done.length) continue;
+      const snap = e.exercises.find(y => y.id === id), sides = snap.sides === 2 ? ["L", "R"] : ["B"];
+      const flaggedPain = sets.some(x => x.pain), pain = flaggedPain || sessionPain(e), form = sets.some(x => x.formSlipped);
+      const complete = sets.every(x => !x.skipped && sides.every(k => x.parts[k]));
+      const down = easierOf(ex);
+      if(pain || form || !complete){
+        const why = flaggedPain ? "Pain was flagged" : pain ? "Knee or back discomfort was 3 or more" : form ? "Form slipped on a set" : "Not every set was completed";
+        if(down) out.push({ key: id, basis: e.id, name: ex.name, kind: "ease", reason: why + " last session, so no increase.", down });
+        continue;
+      }
+      let up = null, reason = "";
+      if(ex.kind === "reps"){
+        const target = sets[0].target || ex.reps, reps = done.flatMap(x => sides.map(k => x.parts[k].reps));
+        if(st.week <= 4){
+          if(firstFour.includes(id) && ex.sets < 3 && reps.every(r => r >= target[0])){
+            up = { label: "add a third set", apply: () => { ex.sets = 3; return true; } }; reason = "Weeks 3 and 4: every set done with good form.";
+          }
+        } else if(reps.every(r => r >= target[1])){
+          up = upReps(ex); reason = "Every set reached " + target[1] + " reps with good form.";
+        }
+      } else if(ex.kind === "hold"){
+        const tgt = sets[0].target || ex.holdSec, holds = done.flatMap(x => sides.map(k => x.parts[k].holdSec));
+        if(holds.every(h => h >= tgt)){ up = { label: (ex.holdSec + 5) + "s hold", apply: () => { ex.holdSec += 5; return true; } }; reason = "Every hold was completed."; }
+      }
+      if(up) out.push({ key: id, basis: e.id, name: ex.name, kind: "up", reason, up, down });
+    }
+    return out;
+  }
+  function descentPrompts(mode){
+    const P = D.program, st = statusOn(todayStr());
+    if(st.phase !== "block" || st.week < 3) return [];
+    const e = D.log.filter(x => x.type === "descent" && x.mode === mode).sort(byWhenDesc)[0];
+    if(!e) return [];
+    const key = "descent:" + mode, rec = (P.prompts || {})[key];
+    if(rec && rec.basis === e.id) return [];
+    const c = P.sessions.descent[mode], fld = mode === "circuit" ? "workSec" : "durationSec";
+    const step = mode === "circuit" ? 5 : 30, minV = mode === "circuit" ? 10 : 30;
+    const lbl = v => mode === "circuit" ? secLabel(v) + " blocks" : secLabel(v) + " total";
+    const down = c[fld] - step >= minV ? { label: lbl(c[fld] - step), apply: () => { c[fld] -= step; return true; } } : null;
+    const name = "Descent " + mode;
+    if(sessionPain(e)) return down ? [{ key, basis: e.id, name, kind: "ease", reason: "Knee or back discomfort was 3 or more last time, so no increase.", down }] : [];
+    if(e.completed && e.formBrokeAt == null) return [{ key, basis: e.id, name, kind: "up", reason: "Form held for the whole session last time. Longer comes before harder.",
+      up: { label: lbl(c[fld] + step), apply: () => { c[fld] += step; return true; } }, down }];
+    return [];
+  }
+  function promptCards(list){
+    S.prompts = list;
+    if(!list.length) return "";
+    const b = (i, c, txt, cls) => '<button class="ghost ' + (cls || "") + '" data-act="pr" data-i="' + i + '" data-c="' + c + '">' + txt + '</button>';
+    return '<p class="eyebrow" style="margin-top:0">Suggestions from last session</p>' + list.map((x, i) =>
+      '<div class="card"><div class="rowname">' + esc(x.name) + '</div><div class="cue">' + x.reason + '</div><div class="btnrow prompts">' +
+        (x.kind === "up"
+          ? b(i, "up", "Progress: " + x.up.label, "sel") + b(i, "same", "Repeat") + (x.down ? b(i, "down", "Easier: " + x.down.label) : "")
+          : b(i, "down", "Easier: " + x.down.label) + b(i, "same", "Keep as is")) +
+      '</div></div>').join("") + '<div style="height:10px"></div>';
+  }
+
+  /* ================= views: progress ================= */
+  function progressView(){
+    const C = compliance(), t = todayStr(), st = statusOn(t);
+    const from7 = addDays(t, -6), acts7 = D.log.filter(e => e.type === "activity" && e.date >= from7 && e.date <= t);
+    const actLine = acts7.length + " activit" + (acts7.length === 1 ? "y" : "ies") + " in the last 7 days" +
+      (acts7.length ? ", " + durLabel(acts7.reduce((a, e) => a + actMinutes(e), 0) * 60) : "") + ". Never counted toward strength or descent.";
+    let comp;
+    if(!C){
+      comp = '<div class="card"><div class="rowname">Starts ' + fmtDay(D.program.startDate) + '</div><div class="cue">' + actLine + '</div></div>';
+    } else {
+      const rows = C.weeks.slice(-4).reverse().map(x => '<div class="kv"><span>Week ' + x.w + (x.cur ? " (now)" : "") + '</span><span>' + weekCounts(x) +
+        (x.part ? ' &middot; ' + x.part + ' partial' : "") + '</span></div>').join("");
+      comp = missedFlag(C) + '<div class="card">' +
+        (C.cur ? '<div class="rowname">This week: ' + weekCounts(C.cur) + '</div>' : "") +
+        (C.tot.sP ? '<div class="cue">Through last week: strength ' + C.tot.sD + ' of ' + C.tot.sP + (C.tot.dP ? ', descent ' + C.tot.dD + ' of ' + C.tot.dP : "") +
+          (C.tot.part ? ', ' + C.tot.part + ' partial' : "") + '.</div>' : "") +
+        '<div style="margin-top:8px">' + rows + '</div>' +
+        '<div class="cue" style="margin-top:6px">' + actLine + '</div></div>';
+    }
+    const inds = Object.keys(IND).map(ind => {
+      const r = indicator(ind);
+      return '<div class="card"><div class="indhead"><i class="tone ' + r.tone + '"></i><span class="rowname">' + IND[ind] + '</span><span class="indstate ' + r.tone + '">' + r.head + '</span></div>' +
+        '<div class="cue" style="margin-top:6px">' + r.reason + '</div>' +
+        (r.next ? '<div style="font-size:14px;margin-top:6px"><b>Next:</b> ' + r.next + '</div>' : "") + '</div>';
+    }).join("");
+    return header() +
+      '<p class="eyebrow" style="margin-top:0">Sticking to the plan</p>' + comp +
+      '<p class="eyebrow">Results</p>' + inds +
+      '<div class="fine">Each indicator is judged only against milestones you set, never against other people. Check-ins are every two weeks from the block start, ' +
+        'using your normal sessions. Nothing here is a reason to train harder than the plan. Milestones are in Plan.</div>';
+  }
+
+  /* ================= views: milestone form ================= */
+  function milestonesCard(){
+    const ms = (D.program.milestones || []).slice().sort((a, b) => a.due < b.due ? -1 : 1);
+    const rows = ms.map(m => {
+      const info = metricInfo(m.mk), at = achievedOn(m);
+      return '<div class="row"><div class="rowhead"><div style="flex:1"><div class="rowname">' + esc(info.label) + '<span class="badge">' + IND[info.ind] + '</span></div>' +
+        '<div class="cue">' + fmtVal(m.mk, m.target) + ' by ' + fmtDay(m.due) + ' &middot; ' + (at ? '<span style="color:var(--work)">met ' + fmtDay(at) + '</span>' : "open") +
+        (m.note ? ' &middot; ' + esc(m.note) : "") + '</div></div>' +
+        '<button class="link" data-act="msedit" data-id="' + m.id + '" style="min-height:36px;padding:4px 0">Edit</button></div></div>';
+    }).join("");
+    return '<div class="card"' + (rows ? ' style="padding-top:2px"' : "") + '>' + (rows || '<div class="cue" style="margin-top:0">No milestones yet. Set them after the two-week baseline, ideally with your PT.</div>') +
+      '<div class="btnrow"><button class="ghost" data-act="msadd">+ Add milestone</button></div></div>';
+  }
+  function milestoneView(){
+    const m = S.ms, info = metricInfo(m.mk), best = valueAt(m.mk, todayStr());
+    const opts = Object.keys(IND).map(ind => '<optgroup label="' + IND[ind] + '">' +
+      metricOptions().filter(k => metricInfo(k).ind === ind).map(k => '<option value="' + k + '"' + (k === m.mk ? " selected" : "") + '>' + esc(metricInfo(k).label) + '</option>').join("") +
+      '</optgroup>').join("");
+    return header() +
+      '<p class="eyebrow" style="margin-top:0">' + (m.id ? "Edit milestone" : "Add milestone") + '</p>' +
+      '<div class="card">' +
+        '<div class="lab" style="font-weight:600">Measure</div>' +
+        '<select class="wide" data-mf="mk">' + opts + '</select>' +
+        '<div class="cue" style="margin-top:8px">Your best in the last 14 days: <b>' + fmtVal(m.mk, best) + '</b></div>' +
+      '</div>' +
+      '<div class="card" style="padding-top:2px;padding-bottom:2px">' +
+        '<div class="field"><div class="lab">Target</div><div class="inwrap"><input class="nin" data-mf="target" type="number" inputmode="decimal" min="0" step="any" value="' + esc(m.target) + '"><span class="unit">' + info.unit + '</span></div></div>' +
+        '<div class="field"><div class="lab">Due</div><input type="date" data-mf="due" value="' + m.due + '"></div>' +
+        '<div class="field"><div class="lab">Note</div><input class="tin" data-mf="note" type="text" placeholder="e.g. agreed with PT" value="' + esc(m.note || "") + '"></div>' +
+      '</div>' +
+      '<div class="fine">' + (info.unit === "sec" ? "Enter seconds, for example 150 for 2:30. " : "") +
+        'Only sets without form or pain flags count toward it.</div>' +
+      '<div style="height:14px"></div><button class="primary" data-act="mssave">Save</button>' +
+      '<div style="text-align:center"><button class="link" data-act="mscancel">Cancel</button>' +
+        (m.id ? ' &nbsp; <button class="link warn" data-act="msdel">Delete</button>' : "") + '</div>';
+  }
+
   /* ================= views: plan ================= */
   function dayButtons(kind){
     const on = D.program.days[kind];
@@ -1500,7 +1849,8 @@
           dTag("continuous", "segmentSec", "t-time", "switch every " + secLabel(cn.segmentSec || 30)) +
           dTag("continuous", "goalSec", "t-work", "goal " + secLabel(cn.goalSec)) + '</div>' +
         '<div class="btnrow"><button class="ghost" data-act="dmode">Default: ' + P.sessions.descent.mode + '</button></div>' +
-        '<div class="fine">Tap any value to change it. How-to notes are behind the ? buttons when you start a session.</div></div>';
+        '<div class="fine">Tap any value to change it. How-to notes are behind the ? buttons when you start a session.</div></div>' +
+      '<p class="eyebrow">Milestones</p>' + milestonesCard();
   }
 
   /* ================= views: log ================= */
@@ -1611,7 +1961,7 @@
   }
 
   function tabbar(){
-    const tabs = [["today","Today"],["plan","Plan"],["log","Log"],["data","Data"]];
+    const tabs = [["today","Today"],["plan","Plan"],["log","Log"],["progress","Progress"],["data","Data"]];
     return '<nav class="tabbar"><div class="in">' + tabs.map(([v, l]) =>
       '<button class="tab ' + (S.view === v ? "on" : "") + '" data-act="tab" data-v="' + v + '">' + ICON[v] +
       (v === "data" && backupDue() ? '<i class="dot"></i>' : "") + l + '</button>').join("") + '</div></nav>';
@@ -1622,7 +1972,8 @@
     app.className = "app";
     if(S.prep){ app.innerHTML = prepView(); return; }
     if(S.act){ app.innerHTML = activityView(); return; }
-    const v = { today: todayView, plan: planView, log: logView, data: dataView }[S.view] || todayView;
+    if(S.ms){ app.innerHTML = milestoneView(); return; }
+    const v = { today: todayView, plan: planView, log: logView, progress: progressView, data: dataView }[S.view] || todayView;
     app.innerHTML = v() + tabbar();
   }
 
@@ -1769,6 +2120,38 @@
     // ---- everything else ----
     if(act === "tab"){ S.view = el.dataset.v; S.pasteOpen = false; S.openEx = null; render(); window.scrollTo(0, 0); }
     else if(act === "prep"){ S.prep = { type: "strength", off: {}, how: null }; render(); window.scrollTo(0, 0); }
+    else if(act === "pr"){
+      const x = S.prompts[Number(el.dataset.i)], c = el.dataset.c;
+      if(!x) return;
+      const ok = c === "up" ? x.up.apply() : c === "down" ? x.down.apply() : true;
+      if(ok === false) return;
+      const P = D.program;
+      P.prompts = P.prompts || {};
+      P.prompts[x.key] = { basis: x.basis, choice: c, at: Date.now() };
+      persist(); toast(c === "same" ? "Keeping " + x.name + " as is" : "Updated " + x.name); render();
+    }
+    else if(act === "msadd"){
+      const P = D.program, base = todayStr() > P.startDate ? todayStr() : P.startDate;
+      S.ms = { id: null, mk: "height", target: "", due: addDays(base, 42), note: "" }; render(); window.scrollTo(0, 0);
+    }
+    else if(act === "msedit"){
+      const m = (D.program.milestones || []).find(x => x.id === el.dataset.id);
+      if(m){ S.ms = clone(m); render(); window.scrollTo(0, 0); }
+    }
+    else if(act === "mscancel"){ S.ms = null; render(); }
+    else if(act === "msdel"){
+      if(confirm("Delete this milestone?")){ D.program.milestones = (D.program.milestones || []).filter(x => x.id !== S.ms.id); S.ms = null; persist(); render(); }
+    }
+    else if(act === "mssave"){
+      const m = S.ms, n = Number(m.target);
+      if(String(m.target).trim() === "" || !isFinite(n) || n <= 0){ toast("Enter a target above zero"); return; }
+      if(!m.due){ toast("Pick a due date"); return; }
+      const rec = { id: m.id || uid(), mk: m.mk, target: n, due: m.due, note: (m.note || "").trim(), createdAt: m.createdAt || Date.now() };
+      const list = D.program.milestones = D.program.milestones || [];
+      const i = list.findIndex(x => x.id === rec.id);
+      if(i >= 0) list[i] = rec; else list.push(rec);
+      S.ms = null; persist(); toast("Milestone saved"); render();
+    }
     else if(act === "aopen"){ openActivity(null); }
     else if(act === "aedit"){ openActivity(el.dataset.id); }
     else if(act === "akind"){ S.act.kind = el.dataset.v; render(); }
@@ -1875,6 +2258,8 @@
 
   document.addEventListener("input", e => {
     if(e.target.id === "fbnotes" && L && L.fb){ L.fb.notes = e.target.value; saveLive(); }
+    const mf = e.target.dataset && e.target.dataset.mf;
+    if(mf && S.ms && mf !== "mk"){ if(mf !== "due" || e.target.value) S.ms[mf] = e.target.value; }
     const f = e.target.dataset && e.target.dataset.af;
     if(f && S.act){
       if(f === "notes") S.act.notes = e.target.value;
@@ -1885,6 +2270,12 @@
 
   document.addEventListener("change", e => {
     if(e.target.dataset && e.target.dataset.af === "date" && S.act && e.target.value){ S.act.date = e.target.value; return; }
+    if(e.target.dataset && e.target.dataset.mf && S.ms){
+      const mf = e.target.dataset.mf;
+      if(mf === "mk"){ S.ms.mk = e.target.value; render(); }
+      else if(mf === "due"){ if(e.target.value) S.ms.due = e.target.value; }
+      return;
+    }
     const el = e.target.closest("[data-chg]");
     if(!el) return;
     const k = el.dataset.chg, P = D.program;
