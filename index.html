@@ -134,6 +134,10 @@
   .t-sets{color:var(--setsc);} .t-load{color:var(--signal);} .t-work{color:var(--work);} .t-time{color:var(--clockc);}
   .exmenu{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
   .exmenu .ghost{flex:1 1 45%; min-height:44px; font-size:14px;}
+  a.ghost{text-decoration:none;}
+  .howto{background:var(--slab2); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-top:10px; -webkit-user-select:text; user-select:text;}
+  .hrow{display:flex; gap:10px; padding:4px 0; font-size:14px; line-height:1.45;}
+  .hrow b{flex:none; width:72px; color:var(--dim); font-weight:600; font-size:12px; letter-spacing:.06em; text-transform:uppercase; padding-top:2px;}
   .check{
     width:28px; height:28px; flex:none; margin-top:1px;
     border:2px solid var(--dim); border-radius:8px;
@@ -255,7 +259,7 @@
 
   /* ================= constants ================= */
   const APP = "alaska-prep";
-  const SCHEMA = 1;               // bump when the shape of saved data changes, and add a migration
+  const SCHEMA = 2;               // bump when the shape of saved data changes, and add a migration
   const K = {
     data: "alaskaprep.v1.data",          // everything: settings, program, log
     live: "alaskaprep.v1.live",          // in-progress session
@@ -269,7 +273,73 @@
 
   /* ================= seed: the template, used on first run only =================
      After first run the program lives in storage and is the source of truth. */
+  /* How-to cards. Written for a home gym; a PT should check them. search = YouTube search terms. */
+  const HOWTO = {
+    warmup: { search: null, steps: [
+      ["Do", "Easy spin on a bike or a brisk walk. Enough to feel warm, not tired."],
+      ["Gauge", "You can still talk in full sentences."],
+      ["Last minute", "A few slow bodyweight squats to a comfortable depth."] ] },
+    squat: { search: "goblet squat to box tutorial", steps: [
+      ["Setup", "Flat bench behind you. Feet shoulder width or a bit wider, toes turned slightly out. Hold one dumbbell upright against your chest, hands cupping the top end, elbows pointing down."],
+      ["Move", "Sit back and down over about 3 seconds until you lightly touch the bench. Don't sit or relax. Stand up by pushing through the whole foot."],
+      ["Keep", "Chest tall, knees in line with your toes, heels down."],
+      ["Avoid", "Low back rounding at the bottom. If it happens, raise the bench with a pad or plate."],
+      ["Adjust", "Bench height sets the depth. Higher is easier on knees and back."] ] },
+    split: { search: "supported split squat", steps: [
+      ["Setup", "Long stride: one foot forward flat, back foot up on the ball of the foot. One hand on a rack, wall or bench for balance. Dumbbell in the other hand if loaded."],
+      ["Move", "Lower straight down by bending both knees until the back knee is a few inches off the floor, or as deep as is comfortable. Push through the front heel to rise."],
+      ["Keep", "Torso upright, weight mostly on the front leg, front knee over the middle of the foot."],
+      ["Sides", "Stay in the stance for all reps, then switch legs."] ] },
+    stepdown: { search: "forward step down exercise", steps: [
+      ["Setup", "Stand on a low step on the working leg, the other leg held just in front of the step, off the edge. A hand on the wall for balance is fine."],
+      ["Move", "Bend the standing knee and slowly lower, about 3 seconds, until the free heel lightly touches the floor. Don't put weight on it. Straighten the standing leg to rise."],
+      ["Keep", "Standing knee over the second toe, not caving in. Hips level."],
+      ["Why", "This is the closest gym version of absorbing a turn, so it's the priority movement."],
+      ["Progress", "Higher step first, then hold a dumbbell, then lower more slowly."] ] },
+    legcurl: { search: "sliding leg curl", steps: [
+      ["Setup", "Lie on your back, knees bent, heels on a towel on a smooth floor or on sliders on carpet. Arms flat on the floor."],
+      ["Move", "Lift your hips into a bridge. Slowly slide your heels away until your legs are nearly straight, keeping the hips up, then pull them back in with the backs of your legs."],
+      ["Keep", "Hips up and ribs down, so the low back doesn't arch."],
+      ["Easier", "Hips lower, shorter slide, or slide out only and walk the heels back in."],
+      ["Harder", "One leg at a time."] ] },
+    wallsit: { search: "wall sit proper form", steps: [
+      ["Setup", "Back flat against a wall, feet hip width and about two feet out from it."],
+      ["Move", "Slide down until your knees are comfortably bent, then hold. Thighs don't need to be level with the floor."],
+      ["Keep", "Knees over ankles, hands off your thighs, steady breathing."],
+      ["Adjust", "Sit higher to make it easier. Slide up the wall to finish."] ] },
+    deadbug: { search: "dead bug exercise physical therapy", steps: [
+      ["Setup", "Lie on your back, arms pointing at the ceiling, hips and knees bent to 90 degrees like a table top."],
+      ["Move", "Breathe out and slowly reach one arm overhead while straightening the opposite leg until it hovers just off the floor. Come back and switch sides."],
+      ["Keep", "Low back gently pressed into the floor the whole time."],
+      ["Adjust", "If your back starts to arch, don't reach as far."] ] },
+    sideplank: { search: "modified side plank on knees", steps: [
+      ["Setup", "Lie on your side, elbow under your shoulder, forearm on the floor, knees bent behind you."],
+      ["Move", "Lift your hips so you're in a straight line from head to knees. Hold and breathe."],
+      ["Keep", "Hips stacked and lifted, not sagging or rolling forward."],
+      ["Harder", "Straight legs, balancing on your feet."] ] },
+    stepup: { search: "box step up", steps: [
+      ["Setup", "Face a box about 12 inches high."],
+      ["Move", "Step up with one foot, push through that heel to stand fully on top, step back down with control. Switch the leading leg each rep."],
+      ["Keep", "Whole foot on the box, torso upright, steady rhythm."],
+      ["Adjust", "Use a lower box if a knee complains."] ] },
+    shallowsq: { search: "quarter squat", steps: [
+      ["Setup", "Feet hip to shoulder width, like a ski stance. Arms forward as if holding poles."],
+      ["Move", "Bend knees and hips into a quarter to half squat and come back up, continuously, at a steady rhythm."],
+      ["Keep", "Don't lock the knees at the top. Keep tension in the legs, as when skiing."] ] }
+  };
+  function addHowto(exercises){
+    for(const id in HOWTO){
+      const ex = exercises[id];
+      if(ex && !ex.howto){ ex.howto = clone(HOWTO[id].steps); ex.search = HOWTO[id].search; ex.video = ex.video || null; }
+    }
+  }
+
   function seed(){
+    const d = seedBase();
+    addHowto(d.program.exercises);
+    return d;
+  }
+  function seedBase(){
     const now = Date.now();
     return {
       app: APP, schema: SCHEMA,
@@ -323,7 +393,9 @@
 
   /* ================= migrations =================
      MIGRATIONS[n] turns a schema-n object into schema n+1. Never edit one after it ships. */
-  const MIGRATIONS = {};
+  const MIGRATIONS = {
+    1: obj => { addHowto(obj.program.exercises); return obj; }      // how-to cards and video links
+  };
   function migrate(obj){
     while(obj.schema < SCHEMA){
       const step = MIGRATIONS[obj.schema];
@@ -611,7 +683,7 @@
       i: 0, next: null, side: null, stage: "lead", t: null, workStartedAt: null, lastCue: null,
       results: {}, fb: null
     };
-    S.prep = null;
+    S.prep = null; S.howto = false;
     enterStep(0, true);
     keepAwake(true); saveLive(); render();
   }
@@ -755,7 +827,7 @@
   }
 
   /* ================= view state ================= */
-  const S = { view: "today", pasteOpen: false, prep: null, openEx: null };
+  const S = { view: "today", pasteOpen: false, prep: null, openEx: null, howto: false };
 
   /* ================= icons ================= */
   const ICON = {
@@ -924,10 +996,28 @@
     return '<div class="btnrow"><button class="ghost" data-act="prev">&larr; Previous</button>' +
       '<button class="ghost" data-act="skip">Skip exercise</button></div>';
   }
+  function videoURL(ex){
+    if(ex.video) return ex.video;
+    const q = ex.orig ? ex.name : ex.search;
+    return q ? "https://www.youtube.com/results?search_query=" + encodeURIComponent(q) : null;
+  }
+  function howtoPanel(ex, closable){
+    const steps = ex.howto || [];
+    const url = videoURL(ex);
+    return '<div class="howto">' +
+      (ex.orig ? '<div class="fine" style="margin:0 0 8px">These notes describe the original exercise, ' + esc(ex.orig) + '.</div>' : "") +
+      steps.map(([k, v]) => '<div class="hrow"><b>' + esc(k) + '</b><span>' + esc(v) + '</span></div>').join("") +
+      (steps.length ? "" : '<div class="muted" style="font-size:14px">No how-to notes for this one.</div>') +
+      '<div class="btnrow">' +
+        (url ? '<a class="ghost" href="' + esc(url) + '" target="_blank" rel="noopener">' + (ex.video ? "Watch video" : "Find a video") + '</a>' : "") +
+        (closable ? '<button class="ghost" data-act="howto">Close</button>' : "") +
+      '</div></div>';
+  }
   function exHeader(ex, st){
     return '<div class="exname">' + esc(ex.name) + '</div>' +
       '<div class="exsub">Set <b>' + st.set + '</b> of ' + st.of + (ex.heightIn != null ? ' &middot; ' + ex.heightIn + ' in' : "") + ' &middot; ' + esc(ex.cue) + '</div>' +
-      (L.side ? '<div class="side">' + (L.side === "L" ? "LEFT" : "RIGHT") + '</div>' : "");
+      (L.side ? '<div class="side">' + (L.side === "L" ? "LEFT" : "RIGHT") + '</div>' : "") +
+      (S.howto ? howtoPanel(ex, true) : '<div><button class="link" data-act="howto">How to do this</button></div>');
   }
 
   function logPanel(idx){
@@ -986,6 +1076,7 @@
       mid = '<div class="exname">Rest</div>' +
         '<div class="exsub">Next: <b>' + esc(nx.name) + '</b>, set ' + n.set + ' of ' + n.of + ' &middot; ' + what +
           (nx.kind === "hold" ? ' &middot; <b>starts on the beep</b>' : "") + '</div>' +
+        (S.howto ? howtoPanel(nx, true) : '<div><button class="link" data-act="howto">How to do it</button></div>') +
         dialHTML("rest", "Rest", "Until next set") +
         '<div class="btnrow" style="margin-top:0"><button class="ghost" data-act="add" data-s="-15">&minus;15</button>' +
           '<button class="ghost" data-act="add" data-s="15">+15</button>' +
@@ -1048,11 +1139,12 @@
   function exRow(ex){
     const open = S.openEx === ex.id, on = isOn(ex);
     const pt = ex.pt === "reviewed" ? '<span class="badge pt">PT reviewed</span>' : ex.pt === "modified" ? '<span class="badge pt">PT modified</span>' : "";
-    const menu = !open ? "" : '<div class="exmenu">' +
+    const menu = !open ? "" : howtoPanel(ex, false) + '<div class="exmenu">' +
       '<button class="ghost" data-act="exon" data-id="' + ex.id + '">' + (on ? "Leave out" : "Include") + '</button>' +
       '<button class="ghost" data-act="exsub" data-id="' + ex.id + '">Substitute</button>' +
       '<button class="ghost" data-act="expt" data-id="' + ex.id + '">PT: ' + (ex.pt || "not reviewed") + '</button>' +
       '<button class="ghost" data-act="excue" data-id="' + ex.id + '">Edit cue</button>' +
+      '<button class="ghost" data-act="exvideo" data-id="' + ex.id + '">' + (ex.video ? "Change video link" : "Set video link") + '</button>' +
       (ex.orig ? '<button class="ghost" data-act="exorig" data-id="' + ex.id + '">Back to ' + esc(ex.orig) + '</button>' : "") +
       '</div>' + (ex.progression ? '<div class="fine" style="margin-top:8px">Progresses by ' + esc(ex.progression) + '.</div>' : "");
     return '<div class="row ' + (on ? "" : "off") + '"><button class="rowname" data-act="exopen" data-id="' + ex.id + '">' + esc(ex.name) +
@@ -1315,6 +1407,7 @@
       else if(act === "flag"){ const r = L.results[L.i]; r[el.dataset.f] = !r[el.dataset.f]; }
       else if(act === "fb"){ const v = Number(el.dataset.v); L.fb[el.dataset.f] = L.fb[el.dataset.f] === v ? null : v; }
       else if(act === "savesess"){ saveSession(); return; }
+      else if(act === "howto"){ S.howto = !S.howto; render(); return; }
       else if(act === "discard"){
         if(confirm("Discard this whole session? It won't be logged.")){ L = null; saveLive(); keepAwake(false); render(); }
         return;
@@ -1368,6 +1461,14 @@
         ex.name = v.trim(); ex.short = ex.name.length > 13 ? ex.name.slice(0, 12) + "…" : ex.name;
         persist(); render();
       }
+    }
+    else if(act === "exvideo"){
+      const ex = exOf(el.dataset.id);
+      const v = prompt("Paste a video link for " + ex.name + ". Leave empty to go back to a YouTube search.", ex.video || "");
+      if(v === null) return;
+      const t = v.trim();
+      if(t && !/^https:\/\//i.test(t)){ toast("The link should start with https://"); return; }
+      ex.video = t || null; persist(); render();
     }
     else if(act === "exorig"){
       const ex = exOf(el.dataset.id);
