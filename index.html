@@ -63,6 +63,16 @@
   .primary:active{transform:scale(.985);}
   .primary.quiet{background:var(--slab); color:var(--paper); border:1px solid var(--line);}
   .primary.go{background:var(--work);}
+  .kinds{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .kinds .ghost{min-height:48px;}
+  .inwrap{display:flex; align-items:center; gap:6px; flex:none;}
+  .nin, .tin, .field input[type=date]{
+    font-family:var(--body); font-size:17px; color:var(--paper); background:var(--slab2);
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px; min-height:44px; -webkit-appearance:none; appearance:none;
+  }
+  .nin{width:84px; text-align:right;}
+  .tin{width:170px;}
+  .unit{font-size:13px; color:var(--dim); width:34px;}
   .primary.broke{background:var(--danger); color:#1A0F0C; min-height:84px; font-size:30px;}
   .qmark{flex:none; width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--slab2); color:var(--dim); font-weight:700; font-size:16px;}
   .qmark.on{background:var(--paper); color:var(--ink); border-color:var(--paper);}
@@ -928,7 +938,7 @@
   }
 
   /* ================= view state ================= */
-  const S = { view: "today", pasteOpen: false, prep: null, openEx: null, howto: false };
+  const S = { view: "today", pasteOpen: false, prep: null, openEx: null, howto: false, act: null };
 
   /* ================= icons ================= */
   const ICON = {
@@ -995,12 +1005,14 @@
       body = '<div class="sub" style="margin-top:0"><span style="color:var(--work)">&#10003; Done.</span> Nice work.</div>';
     } else {
       body = '<div class="sub" style="margin-top:0">' + (st.phase === "before"
-        ? "Pump foiling, MTB and easy aerobic work count. Activity logging arrives in a later step."
-        : "Easy aerobic activity or ski days can be logged here soon.") + '</div>';
+        ? "Pump foiling, MTB, easy aerobic work and ski days all go in the log."
+        : "Easy aerobic work, foiling, MTB or a ski day all go in the log.") + '</div>' +
+        '<button class="primary quiet" data-act="aopen" style="margin-top:12px">Log activity</button>';
     }
     const extra = '<div style="display:flex;flex-wrap:wrap;gap:0 18px;margin-top:6px">' +
       (planned !== "strength" ? '<button class="link" data-act="prep">Strength session anyway</button>' : "") +
-      (planned !== "descent" ? '<button class="link" data-act="prepd">Descent session anyway</button>' : "") + '</div>';
+      (planned !== "descent" ? '<button class="link" data-act="prepd">Descent session anyway</button>' : "") +
+      (planned ? '<button class="link" data-act="aopen">Log an activity</button>' : "") + '</div>';
     const title = planned ? P.sessions[planned].name : (st.phase === "before" ? "No program yet" : "Rest day");
 
     let days = "";
@@ -1310,6 +1322,99 @@
       (L.type === "descent" ? "" : seqStrip());
   }
 
+  /* ================= activities =================
+     Logged in place of conditioning, never credited as strength. Equal minutes are not assumed equal benefit. */
+  const ACT = {
+    foil: { name: "Pump foil", note: "Pumping is pushing work, so it builds fitness but doesn't train braking on the way down. It never counts as a strength session.",
+      fields: [["totalMin", "Total session", "min"], ["activeMin", "Active pumping", "min"], ["bouts", "Number of bouts", ""],
+               ["restSec", "Typical rest between bouts", "sec"], ["longestSec", "Longest bout (optional)", "sec"]] },
+    mtb:  { name: "MTB", note: "Climbing is pushing work, so it builds fitness but doesn't train braking. It never counts as a strength session.",
+      fields: [["rideMin", "Riding time", "min"], ["climbs", "Hard climbing intervals", ""], ["climbMin", "Hard climbing total (optional)", "min"],
+               ["assist", "Motor assist notes (optional)", "text"]] },
+    aerobic: { name: "Easy aerobic", note: "Easy aerobic work supports recovery and base fitness.",
+      fields: [["what", "What", "text"], ["minutes", "Duration", "min"]] },
+    ski: { name: "Ski day", note: "Early-season ski days are part of the program, not time off from it.",
+      fields: [["hours", "Time on snow", "hours"], ["runs", "Runs (optional)", ""], ["where", "Where (optional)", "text"]] }
+  };
+  function actSummary(e){
+    const v = e.v || {}, bits = [];
+    if(e.kind === "foil"){
+      if(v.totalMin) bits.push(v.totalMin + " min total");
+      if(v.activeMin) bits.push(v.activeMin + " min pumping");
+      if(v.bouts) bits.push(v.bouts + " bouts");
+      if(v.restSec) bits.push("~" + v.restSec + "s rest");
+      if(v.longestSec) bits.push("longest " + secLabel(v.longestSec));
+    } else if(e.kind === "mtb"){
+      if(v.rideMin) bits.push(v.rideMin + " min riding");
+      if(v.climbs) bits.push(v.climbs + " hard climb" + (v.climbs == 1 ? "" : "s"));
+      if(v.climbMin) bits.push(v.climbMin + " min climbing");
+      if(v.assist) bits.push("assist: " + esc(v.assist));
+    } else if(e.kind === "aerobic"){
+      if(v.what) bits.push(esc(v.what));
+      if(v.minutes) bits.push(v.minutes + " min");
+    } else if(e.kind === "ski"){
+      if(v.hours) bits.push(v.hours + " h on snow");
+      if(v.runs) bits.push(v.runs + " runs");
+      if(v.where) bits.push(esc(v.where));
+    }
+    return bits.join(" &middot; ");
+  }
+  function ascale(field, from){
+    const cur = S.act[field];
+    let h = "";
+    for(let n = from; n <= 10; n++) h += '<button class="' + (cur === n ? "on" : "") + '" data-act="afb" data-f="' + field + '" data-v="' + n + '">' + n + '</button>';
+    return '<div class="scale ten">' + h + '</div>';
+  }
+  function activityView(){
+    const a = S.act, def = ACT[a.kind];
+    const kinds = Object.keys(ACT).map(k => '<button class="ghost ' + (a.kind === k ? "sel" : "") + '" data-act="akind" data-v="' + k + '">' + ACT[k].name + '</button>').join("");
+    const fields = def.fields.map(([f, lab, unit]) => {
+      const val = a.v[f] == null ? "" : a.v[f];
+      const input = unit === "text"
+        ? '<input class="tin" data-af="' + f + '" type="text" value="' + esc(val) + '" autocomplete="off">'
+        : '<input class="nin" data-af="' + f + '" type="number" inputmode="decimal" min="0" step="any" value="' + esc(val) + '">' +
+          '<span class="unit">' + unit + '</span>';
+      return '<div class="field"><div class="lab">' + lab + '</div><div class="inwrap">' + input + '</div></div>';
+    }).join("");
+    return header() +
+      '<p class="eyebrow" style="margin-top:0">' + (a.id ? "Edit activity" : "Log activity") + '</p>' +
+      '<div class="kinds">' + kinds + '</div>' +
+      '<div class="fine" style="margin-top:10px">' + def.note + '</div>' +
+      '<div class="card" style="margin-top:12px;padding-top:2px;padding-bottom:2px">' +
+        '<div class="field"><div class="lab">Date</div><input type="date" data-af="date" max="' + todayStr() + '" value="' + a.date + '"></div>' +
+        fields + '</div>' +
+      '<div class="fbq"><div class="q">Breathing effort</div><div class="h">1 easy chat, 10 gasping</div>' + ascale("breath", 1) + '</div>' +
+      '<div class="fbq"><div class="q">Leg effort</div><div class="h">1 fresh, 10 legs burning out</div>' + ascale("legs", 1) + '</div>' +
+      '<div class="fbq"><div class="q">Notes</div><textarea class="notes" data-af="notes" placeholder="Conditions, how the legs felt">' + esc(a.notes || "") + '</textarea></div>' +
+      '<div style="height:14px"></div><button class="primary" data-act="asave">Save</button>' +
+      '<div style="text-align:center"><button class="link" data-act="acancel">Cancel</button>' +
+        (a.id ? ' &nbsp; <button class="link warn" data-act="del" data-id="' + a.id + '">Delete</button>' : "") + '</div>';
+  }
+  function openActivity(id){
+    const e = id && D.log.find(x => x.id === id);
+    S.act = e ? { id: e.id, kind: e.kind, date: e.date, v: clone(e.v || {}), breath: e.breath, legs: e.legs, notes: e.notes || "", createdAt: e.createdAt }
+              : { id: null, kind: "foil", date: todayStr(), v: {}, breath: null, legs: null, notes: "" };
+    render(); window.scrollTo(0, 0);
+  }
+  function saveActivity(){
+    const a = S.act, def = ACT[a.kind], v = {};
+    for(const [f, , unit] of def.fields){
+      const x = a.v[f];
+      if(x == null || x === "") continue;
+      if(unit === "text"){ v[f] = String(x).trim(); continue; }
+      const n = Number(x);
+      if(!isFinite(n) || n < 0){ toast("Check the numbers"); return; }
+      v[f] = n;
+    }
+    if(!Object.keys(v).length){ toast("Fill in at least one field"); return; }
+    const entry = { id: a.id || uid(), type: "activity", kind: a.kind, date: a.date || todayStr(), v,
+      breath: a.breath, legs: a.legs, notes: (a.notes || "").trim(), createdAt: a.createdAt || Date.now() };
+    const i = D.log.findIndex(x => x.id === entry.id);
+    if(i >= 0) D.log[i] = entry; else D.log.unshift(entry);
+    persist();
+    S.act = null; S.view = "log"; toast("Saved"); render(); window.scrollTo(0, 0);
+  }
+
   /* ================= views: plan ================= */
   function dayButtons(kind){
     const on = D.program.days[kind];
@@ -1436,6 +1541,15 @@
         descentResult(e).replace('class="result', 'style="font-size:24px" class="result') +
         '<div class="entry-meta">' + esc((e.items || []).join(", ")) + '</div>' + fbHTML(e) + '</div>';
     }
+    if(e.type === "activity"){
+      const r = [["Breathing", e.breath], ["Legs", e.legs]].filter(([, v]) => v != null).map(([k, v]) => k + " <b>" + v + "</b>").join(" &middot; ");
+      return '<div class="entry"><div class="entry-top"><div>' +
+          '<div class="entry-date">' + (ACT[e.kind] ? ACT[e.kind].name : esc(e.kind)) + ' &middot; ' + fmtDay(e.date) + '</div>' +
+          '<div class="entry-meta">' + actSummary(e) + '</div></div>' +
+          '<button class="link" data-act="aedit" data-id="' + e.id + '" style="padding:4px 0;min-height:36px">Edit</button></div>' +
+        (r ? '<div class="entry-meta" style="margin-top:6px">' + r + '</div>' : "") +
+        (e.notes ? '<div style="font-size:14px;margin-top:6px">' + esc(e.notes) + '</div>' : "") + '</div>';
+    }
     if(e.type !== "strength"){
       return '<div class="entry"><div class="entry-date">' + esc(e.title || e.type) + '</div><div class="entry-meta">' + fmtDay(e.date) + '</div></div>';
     }
@@ -1449,9 +1563,13 @@
       fbHTML(e) + '</div>';
   }
   function logView(){
-    const body = D.log.length ? D.log.map(entryHTML).join("")
-      : '<div class="empty">Nothing logged yet.<br>Finished sessions show up here.</div>';
-    return header() + '<p class="eyebrow" style="margin-top:0">Log &middot; ' + D.log.length + '</p>' + body;
+    const when = e => e.startedAt || e.createdAt || 0;
+    const sorted = D.log.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : when(b) - when(a));
+    const body = sorted.length ? sorted.map(entryHTML).join("")
+      : '<div class="empty">Nothing logged yet.<br>Finished sessions and activities show up here.</div>';
+    return header() +
+      '<button class="primary quiet" data-act="aopen" style="min-height:52px;font-size:21px">+ Log activity</button>' +
+      '<p class="eyebrow">Log &middot; ' + D.log.length + '</p>' + body;
   }
 
   /* ================= views: data ================= */
@@ -1503,6 +1621,7 @@
     if(L){ app.className = "app live"; app.innerHTML = sessionView(); return; }
     app.className = "app";
     if(S.prep){ app.innerHTML = prepView(); return; }
+    if(S.act){ app.innerHTML = activityView(); return; }
     const v = { today: todayView, plan: planView, log: logView, data: dataView }[S.view] || todayView;
     app.innerHTML = v() + tabbar();
   }
@@ -1650,6 +1769,12 @@
     // ---- everything else ----
     if(act === "tab"){ S.view = el.dataset.v; S.pasteOpen = false; S.openEx = null; render(); window.scrollTo(0, 0); }
     else if(act === "prep"){ S.prep = { type: "strength", off: {}, how: null }; render(); window.scrollTo(0, 0); }
+    else if(act === "aopen"){ openActivity(null); }
+    else if(act === "aedit"){ openActivity(el.dataset.id); }
+    else if(act === "akind"){ S.act.kind = el.dataset.v; render(); }
+    else if(act === "afb"){ const v = Number(el.dataset.v); S.act[el.dataset.f] = S.act[el.dataset.f] === v ? null : v; render(); }
+    else if(act === "asave"){ saveActivity(); }
+    else if(act === "acancel"){ S.act = null; render(); }
     else if(act === "prepd"){ S.prep = { type: "descent", mode: D.program.sessions.descent.mode || "circuit", how: null }; render(); window.scrollTo(0, 0); }
     else if(act === "pmode"){ S.prep.mode = el.dataset.v; S.prep.how = null; render(); }
     else if(act === "prephow"){ S.prep.how = S.prep.how === el.dataset.id ? null : el.dataset.id; render(); }
@@ -1733,7 +1858,7 @@
       persist(); render();
     }
     else if(act === "del"){
-      if(confirm("Delete this entry from the log?")){ D.log = D.log.filter(x => x.id !== el.dataset.id); persist(); render(); }
+      if(confirm("Delete this entry from the log?")){ D.log = D.log.filter(x => x.id !== el.dataset.id); S.act = null; persist(); render(); }
     }
     else if(act === "day"){
       const kind = el.dataset.kind, wd = Number(el.dataset.wd), days = D.program.days;
@@ -1750,9 +1875,16 @@
 
   document.addEventListener("input", e => {
     if(e.target.id === "fbnotes" && L && L.fb){ L.fb.notes = e.target.value; saveLive(); }
+    const f = e.target.dataset && e.target.dataset.af;
+    if(f && S.act){
+      if(f === "notes") S.act.notes = e.target.value;
+      else if(f === "date"){ if(e.target.value) S.act.date = e.target.value; }
+      else S.act.v[f] = e.target.value;
+    }
   });
 
   document.addEventListener("change", e => {
+    if(e.target.dataset && e.target.dataset.af === "date" && S.act && e.target.value){ S.act.date = e.target.value; return; }
     const el = e.target.closest("[data-chg]");
     if(!el) return;
     const k = el.dataset.chg, P = D.program;
