@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Alaska Prep</title>
+<meta name="theme-color" content="#0D1420" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Alaska Prep" />
+<link rel="apple-touch-icon" id="touchicon" href="" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0D1420;
+    --slab:#172131;
+    --slab2:#1F2A3D;
+    --line:#243146;
+    --paper:#F0EBE1;
+    --dim:#8496AE;
+    --signal:#F5C518;   /* weight */
+    --work:#6FE3A8;     /* reps and holds */
+    --clockc:#8FB8FF;   /* time */
+    --setsc:#C9A7FF;    /* sets */
+    --danger:#E2725B;
+    --display:"Barlow Condensed", "Helvetica Neue", Impact, sans-serif;
+    --body:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --tabh:64px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; min-height:100%; background:var(--ink);}
+  body{
+    color:var(--paper); font-family:var(--body); font-size:16px; line-height:1.45;
+    overscroll-behavior-y:none; -webkit-text-size-adjust:100%;
+  }
+  button, label.btn{font-family:inherit; color:inherit; border:none; background:none; cursor:pointer; font-size:inherit;}
+  button:focus-visible{outline:2px solid var(--signal); outline-offset:3px;}
+  .app{
+    max-width:560px; margin:0 auto;
+    padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + var(--tabh) + 24px);
+  }
+
+  .top{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px;}
+  .wordmark{font-family:var(--display); font-weight:700; font-size:23px; letter-spacing:.03em; text-transform:uppercase;}
+  .wordmark span{color:var(--signal);}
+  .eyebrow{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); font-weight:600; margin:22px 0 10px;}
+  .card{background:var(--slab); border:1px solid var(--line); border-radius:16px; padding:14px 16px;}
+  .card + .card{margin-top:10px;}
+  .fine{font-size:12px; color:var(--dim); line-height:1.6; margin-top:12px;}
+  .muted{color:var(--dim);}
+
+  .primary{
+    display:flex; align-items:center; justify-content:center;
+    width:100%; min-height:60px; border-radius:16px;
+    background:var(--signal); color:#12181F;
+    font-family:var(--display); font-size:24px; font-weight:700;
+    letter-spacing:.05em; text-transform:uppercase; transition:transform .1s ease;
+  }
+  .primary:active{transform:scale(.985);}
+  .primary[disabled]{background:var(--slab); color:var(--dim); border:1px solid var(--line);}
+  .ghost{
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    min-height:50px; border-radius:14px; border:1px solid var(--line);
+    background:var(--slab); font-size:15px; font-weight:600; color:var(--paper); flex:1; padding:0 12px;
+  }
+  .ghost:active{background:var(--slab2);}
+  .ghost.warn{color:var(--danger);}
+  .btnrow{display:flex; gap:10px; margin-top:10px;}
+
+  /* today */
+  .count{font-family:var(--display); font-weight:700; font-size:84px; line-height:.9; letter-spacing:.01em;}
+  .count small{font-size:28px; color:var(--dim); font-weight:600; margin-left:6px; letter-spacing:.04em; text-transform:uppercase;}
+  .sub{font-size:14px; color:var(--dim); margin-top:6px;}
+  .status{font-family:var(--display); font-size:24px; font-weight:600; letter-spacing:.02em; margin-top:16px;}
+  .status b{color:var(--signal); font-weight:700;}
+  .todayname{font-family:var(--display); font-size:34px; font-weight:700; line-height:1; text-transform:uppercase; letter-spacing:.03em;}
+  .week7{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .d7{background:var(--slab); border:1px solid var(--line); border-radius:12px; padding:8px 0 9px; text-align:center;}
+  .d7.now{border-color:var(--paper);}
+  .d7 .wd{font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.08em;}
+  .d7 .dn{font-family:var(--display); font-size:20px; font-weight:600; line-height:1.2;}
+  .d7 .mk{font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.06em; height:16px;}
+  .mk.s{color:var(--signal);} .mk.d{color:var(--clockc);}
+
+  .banner{display:flex; align-items:center; gap:12px; background:#2A2410; border:1px solid #5A4A12; border-radius:14px; padding:12px 14px; margin-bottom:14px;}
+  .banner .txt{flex:1; font-size:14px;}
+  .banner button{font-weight:600; color:var(--signal); min-height:44px; padding:0 4px;}
+  .alert{background:#2B1714; border:1px solid #6A2E24; border-radius:14px; padding:14px; margin-bottom:14px; font-size:14px;}
+  .alert b{color:var(--danger);}
+
+  /* plan */
+  .field{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:52px; border-bottom:1px solid var(--line);}
+  .field:last-child{border-bottom:none;}
+  .field .lab{font-weight:600; font-size:15px;}
+  .field .hint{font-size:12px; color:var(--dim);}
+  .field input[type=date], .field select{
+    font-family:var(--body); font-size:16px; color:var(--paper); background:var(--slab2);
+    border:1px solid var(--line); border-radius:10px; padding:8px 10px; min-height:44px; min-width:0;
+    -webkit-appearance:none; appearance:none;
+  }
+  .days{display:flex; gap:5px; padding:10px 0 12px;}
+  .day{flex:1; min-height:44px; border-radius:10px; border:1px solid var(--line); font-size:13px; font-weight:600; color:var(--dim); background:var(--slab2);}
+  .day.on{background:var(--paper); color:var(--ink); border-color:var(--paper);}
+  .day.on.dsc{background:var(--clockc); border-color:var(--clockc);}
+  .warnline{font-size:12px; color:var(--danger); padding-bottom:10px;}
+
+  .row{padding:13px 0; border-bottom:1px solid var(--line);}
+  .row:last-child{border-bottom:none;}
+  .rowname{font-weight:600; font-size:15px; display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;}
+  .badge{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); border:1px solid var(--line); border-radius:999px; padding:1px 7px; font-weight:600;}
+  .badge.key{color:var(--signal); border-color:#5A4A12;}
+  .cue{font-size:13px; color:var(--dim); margin-top:3px;}
+  .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .tag{
+    font-family:var(--display); font-size:17px; font-weight:600; letter-spacing:.02em;
+    border:1px dashed currentColor; border-radius:8px; padding:1px 9px; min-height:30px;
+    display:inline-flex; align-items:center;
+  }
+  .t-sets{color:var(--setsc);} .t-load{color:var(--signal);} .t-work{color:var(--work);} .t-time{color:var(--clockc);}
+
+  /* data */
+  .kv{display:flex; justify-content:space-between; gap:12px; padding:6px 0; font-size:14px;}
+  .kv span:first-child{color:var(--dim);}
+  textarea{
+    width:100%; min-height:140px; margin-top:10px; font:13px/1.4 ui-monospace, Menlo, monospace;
+    color:var(--paper); background:var(--slab2); border:1px solid var(--line); border-radius:12px; padding:10px;
+  }
+
+  /* tab bar */
+  .tabbar{
+    position:fixed; left:0; right:0; bottom:0; z-index:5;
+    background:rgba(13,20,32,.94); -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);
+    padding:0 8px env(safe-area-inset-bottom);
+  }
+  .tabbar .in{max-width:560px; margin:0 auto; display:flex; height:var(--tabh);}
+  .tab{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--dim); font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;}
+  .tab svg{width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round;}
+  .tab.on{color:var(--paper);}
+  .tab .dot{position:absolute; margin:-14px 0 0 20px; width:8px; height:8px; border-radius:50%; background:var(--signal);}
+
+  .toast{
+    position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + var(--tabh) + 16px); transform:translate(-50%, 20px);
+    background:var(--paper); color:var(--ink); font-weight:600; font-size:14px;
+    padding:11px 18px; border-radius:999px; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:9;
+    max-width:calc(100% - 32px); text-align:center;
+  }
+  .toast.on{opacity:1; transform:translate(-50%, 0);}
+  .empty{text-align:center; color:var(--dim); padding:40px 20px; font-size:15px; line-height:1.6;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ================= constants ================= */
+  const APP = "alaska-prep";
+  const SCHEMA = 1;               // bump when the shape of saved data changes, and add a migration
+  const K = {
+    data: "alaskaprep.v1.data",          // everything: settings, program, log
+    live: "alaskaprep.v1.live",          // in-progress session (phase 1)
+    undo: "alaskaprep.v1.undo",          // copy kept before an import or erase
+    bad:  "alaskaprep.v1.unreadable"     // saved data that failed to load, never overwritten silently
+  };
+  const DAY = 864e5;
+  const BACKUP_NAG_DAYS = 7;
+  const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  /* ================= seed: the template, used on first run only =================
+     After first run the program lives in storage and is the source of truth. */
+  function seed(){
+    const now = Date.now();
+    return {
+      app: APP, schema: SCHEMA,
+      meta: { createdAt: now, changedAt: now, lastBackupAt: null },
+      settings: { units: "lb", sound: true, restSec: 75, lowerCue: false, ptCueSeen: false },
+      program: {
+        id: "heliski-2027",
+        name: "Alaska heli-ski block",
+        tripDate: "2027-03-13",
+        startDate: "2026-11-30",
+        weeks: 15,
+        taperDays: 7,
+        days: { strength: [1, 4], descent: [6] },      // 0 = Sunday
+        exercises: {
+          warmup:   { id:"warmup", name:"Bike or walk warm-up", short:"Warm-up", kind:"time", sides:1, sets:1, durationSec:300,
+                      cue:"Comfortable pace", progression:"none" },
+          squat:    { id:"squat", name:"Goblet squat to bench", short:"Squat", kind:"reps", sides:1, sets:2, reps:[8,12], load:null,
+                      cue:"About 3 seconds lowering, comfortable depth, touch the bench lightly", progression:"resistance",
+                      alts:["Bodyweight squat to bench"] },
+          split:    { id:"split", name:"Supported split squat", short:"Split squat", kind:"reps", sides:2, sets:2, reps:[8,8], load:null,
+                      cue:"Hold a support, controlled", progression:"resistance" },
+          stepdown: { id:"stepdown", name:"Low step-down", short:"Step-down", kind:"reps", sides:2, sets:2, reps:[8,8], load:null, heightIn:6,
+                      cue:"Lower the opposite heel slowly", progression:"step height, then load, then tempo", key:true },
+          legcurl:  { id:"legcurl", name:"Sliding leg curl", short:"Leg curl", kind:"reps", sides:1, sets:2, reps:[10,12], load:null,
+                      cue:"Hips up, heels on a towel or sliders, no swinging", progression:"resistance",
+                      alts:["Swiss ball leg curl","Single-leg sliding curl"] },
+          wallsit:  { id:"wallsit", name:"Wall sit", short:"Wall sit", kind:"hold", sides:1, sets:3, holdSec:20, holdGoalSec:120,
+                      cue:"Moderate knee bend, thighs need not be horizontal", progression:"duration, 5 to 10 sec at a time, toward 2 min" },
+          deadbug:  { id:"deadbug", name:"Dead bug", short:"Dead bug", kind:"reps", sides:2, sets:2, reps:[8,8], load:null, optional:true,
+                      cue:"Low back stays quietly on the floor, move slowly", progression:"tempo, then hold at full reach" },
+          sideplank:{ id:"sideplank", name:"Side plank", short:"Side plank", kind:"hold", sides:2, sets:2, holdSec:20, optional:true,
+                      cue:"Knees down is fine. Straight line from ear to knee", progression:"duration" },
+          stepup:   { id:"stepup", name:"Step-up", short:"Step-up", kind:"time", sides:1, sets:1, durationSec:30, heightIn:12,
+                      cue:"Alternate legs, steady rhythm", progression:"duration" },
+          shallowsq:{ id:"shallowsq", name:"Shallow squat", short:"Shallow sq", kind:"time", sides:1, sets:1, durationSec:30,
+                      cue:"Ski-stance depth, keep moving", progression:"duration" }
+        },
+        sessions: {
+          strength: { name: "Strength", items: ["warmup","squat","split","stepdown","legcurl","wallsit","deadbug","sideplank"] },
+          descent: {
+            name: "Descent simulation", fromWeek: 3,
+            circuit: { rounds: 3, workSec: 30, restSec: 90, transitionSec: 10, items: ["stepup","shallowsq","wallsit"] },
+            continuous: { durationSec: 120, goalSec: 360, items: ["shallowsq","stepup","wallsit"] },
+            mode: "circuit"
+          }
+        }
+      },
+      log: []
+    };
+  }
+
+  /* ================= migrations =================
+     MIGRATIONS[n] turns a schema-n object into schema n+1. Never edit one after it ships. */
+  const MIGRATIONS = {};
+  function migrate(obj){
+    while(obj.schema < SCHEMA){
+      const step = MIGRATIONS[obj.schema];
+      if(!step) throw new Error("No migration from version " + obj.schema);
+      obj = step(obj);
+      obj.schema += 1;
+    }
+    return obj;
+  }
+  function validate(obj){
+    if(!obj || typeof obj !== "object") return "This isn't a backup file.";
+    if(obj.app !== APP) return "This file isn't from Alaska Prep.";
+    if(!Number.isInteger(obj.schema)) return "The file has no version number.";
+    if(obj.schema > SCHEMA) return "This file was made by a newer version of the app. Reload the app and try again.";
+    if(!obj.program || typeof obj.program !== "object" || !Array.isArray(obj.log) || !obj.meta || !obj.settings) return "The file is incomplete.";
+    return null;
+  }
+
+  /* ================= storage ================= */
+  function rawGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function rawSet(k, v){ try{ localStorage.setItem(k, v); return true; }catch(e){ return false; } }
+  function rawDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+  let D = null;              // all app data
+  let loadProblem = null;    // set when saved data could not be read
+
+  function load(){
+    const raw = rawGet(K.data);
+    if(raw == null){ D = seed(); persist(false); return; }
+    try{
+      const obj = JSON.parse(raw);
+      const err = validate(obj);
+      if(err) throw new Error(err);
+      const before = obj.schema;
+      D = migrate(obj);
+      if(D.schema !== before) persist(false);
+    }catch(e){
+      // Keep the unreadable copy before anything can overwrite it.
+      if(rawGet(K.bad) == null) rawSet(K.bad, raw);
+      loadProblem = e.message || "Unknown error";
+      D = seed();
+      persist(false);
+    }
+  }
+  function persist(touch = true){
+    if(touch) D.meta.changedAt = Date.now();
+    if(!rawSet(K.data, JSON.stringify(D))) toast("Couldn't save. Export a backup now.");
+  }
+  function exportText(obj = D){
+    return JSON.stringify(Object.assign({}, obj, { exportedAt: Date.now() }), null, 2);
+  }
+
+  let persisted = null;
+  async function askPersist(){
+    try{
+      if(navigator.storage && navigator.storage.persist){
+        persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+      }
+    }catch(e){}
+  }
+
+  /* ================= dates (YYYY-MM-DD strings, local) ================= */
+  const pad = n => String(n).padStart(2, "0");
+  const ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const parseYmd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+  const dayNum = s => { const [y, m, d] = s.split("-").map(Number); return Date.UTC(y, m - 1, d) / DAY; };
+  const todayStr = () => ymd(new Date());
+  const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
+  const fmtDay = s => parseYmd(s).toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+  const fmtLong = s => parseYmd(s).toLocaleDateString(undefined, { month:"long", day:"numeric", year:"numeric" });
+  function ago(ts){
+    if(!ts) return "never";
+    const m = Math.round((Date.now() - ts) / 60000);
+    if(m < 1) return "just now";
+    if(m < 60) return m + " min ago";
+    const h = Math.round(m / 60);
+    if(h < 24) return h + " hour" + (h === 1 ? "" : "s") + " ago";
+    const d = Math.round(h / 24);
+    return d + " day" + (d === 1 ? "" : "s") + " ago";
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;" })[c]); }
+
+  /* ================= program engine ================= */
+  // Monday on or after (trip - weeks*7): 15 weeks before Mar 13 2027 gives Nov 30 2026.
+  function suggestedStart(weeks){
+    const s = addDays(D.program.tripDate, -weeks * 7);
+    const wd = parseYmd(s).getDay();
+    return addDays(s, (8 - wd) % 7);
+  }
+  function statusOn(s){
+    const P = D.program;
+    const t = dayNum(s), start = dayNum(P.startDate), trip = dayNum(P.tripDate);
+    const toTrip = trip - t;
+    if(t >= trip) return { phase:"after", toTrip };
+    if(t < start) return { phase:"before", toTrip, toStart: start - t };
+    const week = Math.floor((t - start) / 7) + 1;
+    if(week > P.weeks) return { phase:"done", toTrip, week };
+    return { phase: toTrip <= P.taperDays ? "taper" : "block", toTrip, week };
+  }
+  // What the schedule says for a given date. Missed sessions never roll forward.
+  function plannedOn(s){
+    const st = statusOn(s);
+    if(st.phase !== "block" && st.phase !== "taper") return null;
+    const wd = parseYmd(s).getDay(), P = D.program;
+    if(P.days.strength.includes(wd)) return "strength";
+    if(P.days.descent.includes(wd) && st.week >= P.sessions.descent.fromWeek) return "descent";
+    return null;
+  }
+  function strengthGapWarning(){
+    const d = D.program.days.strength.slice().sort((a, b) => a - b);
+    if(d.length < 2) return null;
+    for(let i = 0; i < d.length; i++){
+      const gap = (d[(i + 1) % d.length] - d[i] + 7) % 7 || 7;
+      if(gap < 2) return "Strength days are less than 48 hours apart.";
+    }
+    return null;
+  }
+
+  /* ================= backup ================= */
+  function backupDue(){
+    const last = D.meta.lastBackupAt;
+    if(last && D.meta.changedAt <= last) return false;      // nothing new since the last backup
+    return !last || Date.now() - last > BACKUP_NAG_DAYS * DAY;
+  }
+  function markBackedUp(){ D.meta.lastBackupAt = Date.now(); persist(false); }
+  function backupName(){ return "alaska-prep-" + todayStr() + ".json"; }
+
+  async function shareFile(text, name){
+    const file = new File([text], name, { type: "application/json" });
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try{ await navigator.share({ files: [file] }); return true; }
+      catch(e){ if(e && e.name === "AbortError") return false; }
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    return true;
+  }
+  async function saveBackup(){
+    if(await shareFile(exportText(), backupName())){ markBackedUp(); toast("Backup saved"); render(); }
+  }
+  async function copyBackup(){
+    try{
+      await navigator.clipboard.writeText(exportText());
+      markBackedUp(); toast("Backup copied. Paste it into Notes or Mail."); render();
+    }catch(e){ toast("Copy failed. Use Save backup file instead."); }
+  }
+  function importText(text){
+    let obj;
+    try{ obj = JSON.parse(text); }catch(e){ toast("That isn't valid backup text."); return; }
+    const err = validate(obj);
+    if(err){ alert(err); return; }
+    try{ obj = migrate(obj); }catch(e){ alert(e.message); return; }
+    const when = obj.exportedAt ? new Date(obj.exportedAt).toLocaleString() : "unknown time";
+    const msg = "Replace everything on this phone with this backup?\n\n" +
+      "Exported " + when + "\n" + obj.log.length + " log entr" + (obj.log.length === 1 ? "y" : "ies") +
+      "\nBlock starts " + obj.program.startDate +
+      "\n\nWhat's on the phone now is kept as an undo copy.";
+    if(!confirm(msg)) return;
+    rawSet(K.undo, JSON.stringify(D));
+    delete obj.exportedAt;
+    D = obj;
+    D.meta.lastBackupAt = D.meta.lastBackupAt || Date.now();   // it came from a backup, so one exists
+    persist(false);
+    S.pasteOpen = false;
+    toast("Backup restored"); render();
+  }
+  function undoImport(){
+    const raw = rawGet(K.undo);
+    if(!raw) return;
+    if(!confirm("Go back to the data from before the last restore or erase?")) return;
+    const cur = JSON.stringify(D);
+    D = JSON.parse(raw);
+    persist(false);
+    rawSet(K.undo, cur);       // undo is reversible too
+    toast("Previous data restored"); render();
+  }
+  function eraseAll(){
+    if(!confirm("Erase all data on this phone and start from the template?\n\nAn undo copy is kept on this phone, but save a backup file first if in doubt.")) return;
+    rawSet(K.undo, JSON.stringify(D));
+    rawDel(K.live);
+    D = seed(); persist(false);
+    toast("Erased. Undo is in Data."); render();
+  }
+
+  /* ================= view state ================= */
+  const S = { view: "today", pasteOpen: false };
+
+  /* ================= icons ================= */
+  const ICON = {
+    today: '<svg viewBox="0 0 24 24"><path d="M3 20l6.5-11 4 6.5 2.5-3.5L21 20z"/><path d="M8 11.5l1.5-2.5 1.6 2.6"/></svg>',
+    plan:  '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
+    log:   '<svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>',
+    data:  '<svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 16v3h14v-3"/></svg>'
+  };
+
+  /* ================= views ================= */
+  const app = document.getElementById("app");
+
+  function header(){
+    return '<div class="top"><div class="wordmark">Alaska <span>Prep</span></div></div>';
+  }
+
+  function backupBanner(){
+    if(!backupDue()) return "";
+    const last = D.meta.lastBackupAt;
+    return '<div class="banner"><div class="txt">' +
+      (last ? "Last backup " + ago(last) + "." : "No backup yet.") +
+      ' Your log lives only on this phone.</div>' +
+      '<button data-act="backup">Back up</button></div>';
+  }
+
+  function problemAlert(){
+    if(!loadProblem && rawGet(K.bad) == null) return "";
+    return '<div class="alert"><b>Saved data couldn&rsquo;t be read.</b> ' +
+      esc(loadProblem || "An earlier copy failed to load.") +
+      ' The original was kept untouched. Export it and send it to Claude to recover.' +
+      '<div class="btnrow"><button class="ghost" data-act="exportbad">Export it</button>' +
+      '<button class="ghost warn" data-act="discardbad">Discard it</button></div></div>';
+  }
+
+  function todayView(){
+    const t = todayStr(), st = statusOn(t), P = D.program;
+    let status;
+    if(st.phase === "before") status = 'Block starts <b>' + fmtDay(P.startDate) + '</b>, in ' + st.toStart + ' day' + (st.toStart === 1 ? "" : "s");
+    else if(st.phase === "block") status = '<b>Week ' + st.week + '</b> of ' + P.weeks;
+    else if(st.phase === "taper") status = '<b>Taper</b> &middot; week ' + st.week + ' of ' + P.weeks;
+    else if(st.phase === "done") status = 'Block finished';
+    else status = 'Trip day has passed';
+
+    const planned = plannedOn(t);
+    const todayCard = '<div class="card">' +
+      '<div class="muted" style="font-size:13px">Today, ' + fmtDay(t) + '</div>' +
+      '<div class="todayname" style="margin:6px 0 14px">' +
+        (planned ? esc(P.sessions[planned].name) : (st.phase === "before" ? "No program yet" : "Rest day")) + '</div>' +
+      (planned
+        ? '<button class="primary" disabled>Session runner comes in step 1</button>'
+        : '<div class="sub" style="margin-top:0">' + (st.phase === "before"
+            ? "Pump foiling, MTB and easy aerobic work count. Activity logging arrives in a later step."
+            : "Easy aerobic activity or ski days can be logged here soon.") + '</div>') +
+      '</div>';
+
+    let days = "";
+    for(let i = 0; i < 7; i++){
+      const d = addDays(t, i), p = plannedOn(d);
+      days += '<div class="d7 ' + (i === 0 ? "now" : "") + '">' +
+        '<div class="wd">' + WD[parseYmd(d).getDay()] + '</div>' +
+        '<div class="dn">' + parseYmd(d).getDate() + '</div>' +
+        '<div class="mk ' + (p === "strength" ? "s" : p === "descent" ? "d" : "") + '">' +
+          (p === "strength" ? "STR" : p === "descent" ? "DSC" : "") + '</div></div>';
+    }
+
+    return header() + problemAlert() + backupBanner() +
+      '<div class="count">' + Math.max(0, st.toTrip) + '<small>days</small></div>' +
+      '<div class="sub">to Alaska &middot; ' + fmtLong(P.tripDate) + '</div>' +
+      '<div class="status">' + status + '</div>' +
+      '<p class="eyebrow">Today</p>' + todayCard +
+      '<p class="eyebrow">Next 7 days</p><div class="week7">' + days + '</div>';
+  }
+
+  function dayButtons(kind){
+    const on = D.program.days[kind];
+    let h = "";
+    for(const wd of [1,2,3,4,5,6,0]){
+      h += '<button class="day ' + (on.includes(wd) ? "on" : "") + (kind === "descent" ? " dsc" : "") +
+        '" data-act="day" data-kind="' + kind + '" data-wd="' + wd + '">' + WD[wd].slice(0, 2) + '</button>';
+    }
+    return '<div class="days">' + h + '</div>';
+  }
+
+  function exTags(ex){
+    const u = D.settings.units, side = ex.sides === 2 ? "/side" : "";
+    let h = '<span class="tag t-sets">' + ex.sets + ' set' + (ex.sets === 1 ? "" : "s") + '</span>';
+    if(ex.kind === "reps"){
+      const r = ex.reps[0] === ex.reps[1] ? ex.reps[0] : ex.reps[0] + "&ndash;" + ex.reps[1];
+      if(ex.load != null) h += '<span class="tag t-load">' + ex.load + ' ' + u + '</span>';
+      h += '<span class="tag t-work">' + r + ' reps' + side + '</span>';
+    } else if(ex.kind === "hold"){
+      h += '<span class="tag t-work">' + ex.holdSec + 's hold' + side + '</span>';
+    } else {
+      const s = ex.durationSec;
+      h += '<span class="tag t-time">' + (s % 60 === 0 ? s / 60 + " min" : s + " sec") + '</span>';
+    }
+    if(ex.heightIn != null) h += '<span class="tag t-load">' + ex.heightIn + ' in step</span>';
+    return h;
+  }
+
+  function exRow(ex){
+    return '<div class="row"><div class="rowname">' + esc(ex.name) +
+      (ex.key ? '<span class="badge key">Priority</span>' : "") +
+      (ex.optional ? '<span class="badge">Optional</span>' : "") + '</div>' +
+      '<div class="cue">' + esc(ex.cue) + '</div>' +
+      '<div class="tags">' + exTags(ex) + '</div></div>';
+  }
+
+  function planView(){
+    const P = D.program, gap = strengthGapWarning();
+    const wkOpts = [8, 10, 12, 15].map(w => '<option value="' + w + '"' + (P.weeks === w ? " selected" : "") + '>' + w + ' weeks</option>').join("");
+    const strength = P.sessions.strength.items.map(id => exRow(P.exercises[id])).join("");
+    const c = P.sessions.descent.circuit;
+    const descent = c.items.map(id => P.exercises[id].name).join(", ");
+
+    return header() +
+      '<p class="eyebrow" style="margin-top:0">Schedule</p>' +
+      '<div class="card" style="padding-top:2px; padding-bottom:2px">' +
+        '<div class="field"><div><div class="lab">Trip</div></div>' +
+          '<input type="date" data-chg="trip" value="' + P.tripDate + '"></div>' +
+        '<div class="field"><div><div class="lab">Block length</div><div class="hint">Changing this moves the start date</div></div>' +
+          '<select data-chg="weeks">' + wkOpts + '</select></div>' +
+        '<div class="field"><div><div class="lab">Start</div><div class="hint">Last ' + P.taperDays + ' days before the trip are taper</div></div>' +
+          '<input type="date" data-chg="start" value="' + P.startDate + '"></div>' +
+        '<div style="padding-top:12px"><div class="lab" style="font-weight:600;font-size:15px">Strength days</div>' + dayButtons("strength") +
+          (gap ? '<div class="warnline">' + gap + '</div>' : "") + '</div>' +
+        '<div style="border-top:1px solid var(--line); padding-top:12px"><div class="lab" style="font-weight:600;font-size:15px">Descent simulation day</div>' +
+          '<div class="hint muted" style="font-size:12px">Starts in week ' + P.sessions.descent.fromWeek + '</div>' + dayButtons("descent") + '</div>' +
+      '</div>' +
+      '<p class="eyebrow">Strength session</p>' +
+      '<div class="card" style="padding-top:2px; padding-bottom:2px">' + strength + '</div>' +
+      '<div class="fine">Rest ' + D.settings.restSec + ' sec between sets. Finish each set with about two good reps left. Editing these comes in step 1.</div>' +
+      '<p class="eyebrow">Descent simulation</p>' +
+      '<div class="card"><div class="rowname">Circuit, early weeks</div>' +
+        '<div class="cue">' + c.rounds + ' rounds of ' + esc(descent) + ', ' + c.workSec + ' sec each, ' + c.restSec + ' sec rest between rounds.</div>' +
+        '<div class="rowname" style="margin-top:12px">Continuous, later weeks</div>' +
+        '<div class="cue">Builds from 2 toward 6 minutes of unbroken work. Measured by time to form breakdown.</div></div>';
+  }
+
+  function logView(){
+    const body = D.log.length
+      ? D.log.map(e => '<div class="card"><div class="rowname">' + esc(e.title || e.type) + '</div><div class="cue">' + esc(e.date || "") + '</div></div>').join("")
+      : '<div class="empty">Nothing logged yet.<br>Workouts and activities will show up here.</div>';
+    return header() + '<p class="eyebrow" style="margin-top:0">Log &middot; ' + D.log.length + '</p>' + body;
+  }
+
+  function dataView(){
+    const hasUndo = rawGet(K.undo) != null;
+    let bytes = 0; try{ bytes = (rawGet(K.data) || "").length; }catch(e){}
+    return header() + problemAlert() +
+      '<p class="eyebrow" style="margin-top:0">Backup</p>' +
+      '<div class="card">' +
+        '<div class="kv"><span>Last backup</span><span>' + ago(D.meta.lastBackupAt) + '</span></div>' +
+        '<div class="kv"><span>Last change</span><span>' + ago(D.meta.changedAt) + '</span></div>' +
+        '<div class="kv"><span>Log entries</span><span>' + D.log.length + '</span></div>' +
+        '<div style="height:10px"></div>' +
+        '<button class="primary" data-act="backup">Save backup file</button>' +
+        '<div class="btnrow"><button class="ghost" data-act="copy">Copy as text</button></div>' +
+        '<div class="fine" style="margin-top:10px">Save backup file opens the share sheet. Pick Save to Files and choose iCloud Drive so it&rsquo;s off the phone.</div>' +
+      '</div>' +
+      '<p class="eyebrow">Restore</p>' +
+      '<div class="card">' +
+        '<div class="btnrow" style="margin-top:0">' +
+          '<label class="ghost btn">From file<input type="file" accept=".json,application/json,text/plain" data-chg="file" hidden></label>' +
+          '<button class="ghost" data-act="pasteopen">Paste text</button>' +
+        '</div>' +
+        (S.pasteOpen ? '<textarea id="paste" placeholder="Paste backup text here" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>' +
+          '<div class="btnrow"><button class="ghost" data-act="pastego">Restore pasted text</button></div>' : "") +
+        (hasUndo ? '<div class="btnrow"><button class="ghost" data-act="undo">Undo last restore or erase</button></div>' : "") +
+      '</div>' +
+      '<p class="eyebrow">Danger zone</p>' +
+      '<div class="card"><button class="ghost warn" style="width:100%" data-act="erase">Erase all data</button></div>' +
+      '<div class="fine">Everything is stored on this phone only (' + (bytes / 1024).toFixed(1) + ' KB, data version ' + D.schema + '). ' +
+        'Keep the app on your Home Screen so Safari doesn&rsquo;t clear it. ' +
+        'Persistent storage: ' + (persisted === null ? "unknown" : persisted ? "granted" : "not granted") + '.</div>';
+  }
+
+  function tabbar(){
+    const tabs = [["today","Today"],["plan","Plan"],["log","Log"],["data","Data"]];
+    return '<nav class="tabbar"><div class="in">' + tabs.map(([v, l]) =>
+      '<button class="tab ' + (S.view === v ? "on" : "") + '" data-act="tab" data-v="' + v + '">' + ICON[v] +
+      (v === "data" && backupDue() ? '<i class="dot"></i>' : "") + l + '</button>').join("") + '</div></nav>';
+  }
+
+  function render(){
+    const v = { today: todayView, plan: planView, log: logView, data: dataView }[S.view] || todayView;
+    app.innerHTML = v() + tabbar();
+  }
+
+  /* ================= toast ================= */
+  let toastTimer = null;
+  function toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("on"), 2800);
+  }
+
+  /* ================= events ================= */
+  document.addEventListener("click", e => {
+    const el = e.target.closest("[data-act]");
+    if(!el) return;
+    const act = el.dataset.act;
+
+    if(act === "tab"){ S.view = el.dataset.v; S.pasteOpen = false; render(); window.scrollTo(0, 0); }
+    else if(act === "backup"){ saveBackup(); }
+    else if(act === "copy"){ copyBackup(); }
+    else if(act === "pasteopen"){ S.pasteOpen = !S.pasteOpen; render(); }
+    else if(act === "pastego"){ const t = document.getElementById("paste"); if(t && t.value.trim()) importText(t.value); }
+    else if(act === "undo"){ undoImport(); }
+    else if(act === "erase"){ eraseAll(); }
+    else if(act === "exportbad"){ const raw = rawGet(K.bad); if(raw) shareFile(raw, "alaska-prep-unreadable-" + todayStr() + ".json"); }
+    else if(act === "discardbad"){
+      if(confirm("Delete the unreadable copy for good?")){ rawDel(K.bad); loadProblem = null; render(); }
+    }
+    else if(act === "day"){
+      const kind = el.dataset.kind, wd = Number(el.dataset.wd), days = D.program.days;
+      if(kind === "descent"){
+        days.descent = days.descent.includes(wd) ? [] : [wd];
+      } else {
+        days.strength = days.strength.includes(wd) ? days.strength.filter(d => d !== wd) : days.strength.concat(wd).sort((a, b) => a - b);
+      }
+      if(kind === "strength" && days.descent.includes(wd)) days.descent = [];
+      if(kind === "descent" && days.strength.includes(wd)) days.strength = days.strength.filter(d => d !== wd);
+      persist(); render();
+    }
+  });
+
+  document.addEventListener("change", e => {
+    const el = e.target.closest("[data-chg]");
+    if(!el) return;
+    const k = el.dataset.chg, P = D.program;
+    if(k === "weeks"){
+      P.weeks = Number(el.value);
+      P.startDate = suggestedStart(P.weeks);
+      persist(); render(); toast("Start moved to " + fmtDay(P.startDate));
+    } else if(k === "start" && el.value){
+      P.startDate = el.value; persist(); render();
+    } else if(k === "trip" && el.value){
+      P.tripDate = el.value; persist(); render();
+    } else if(k === "file"){
+      const f = el.files && el.files[0];
+      if(f) f.text().then(importText).catch(() => toast("Couldn't read that file."));
+      el.value = "";
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") render(); });
+
+  /* ================= home screen icon (drawn once, PNG so iOS accepts it) ================= */
+  function drawIcon(){
+    try{
+      const c = document.createElement("canvas"); c.width = c.height = 180;
+      const g = c.getContext("2d");
+      g.fillStyle = "#0D1420"; g.fillRect(0, 0, 180, 180);
+      g.fillStyle = "#3A4A63";
+      g.beginPath(); g.moveTo(70, 140); g.lineTo(122, 62); g.lineTo(170, 140); g.closePath(); g.fill();
+      g.fillStyle = "#8496AE";
+      g.beginPath(); g.moveTo(10, 140); g.lineTo(72, 42); g.lineTo(134, 140); g.closePath(); g.fill();
+      g.fillStyle = "#F0EBE1";   // snow cap
+      g.beginPath(); g.moveTo(72, 42); g.lineTo(93, 75); g.lineTo(82, 70); g.lineTo(72, 80); g.lineTo(62, 70); g.lineTo(51, 75); g.closePath(); g.fill();
+      g.fillStyle = "#F5C518"; g.fillRect(10, 140, 160, 8);
+      document.getElementById("touchicon").href = c.toDataURL("image/png");
+    }catch(e){}
+  }
+
+  /* ================= boot ================= */
+  load();
+  drawIcon();
+  render();
+  askPersist().then(() => { if(S.view === "data") render(); });
+})();
+</script>
+</body>
+</html>
