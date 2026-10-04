@@ -42,6 +42,7 @@
     max-width:560px; margin:0 auto;
     padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + var(--tabh) + 24px);
   }
+  .app.live{padding-bottom:calc(env(safe-area-inset-bottom) + 20px); -webkit-user-select:none; user-select:none;}
 
   .top{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px;}
   .wordmark{font-family:var(--display); font-weight:700; font-size:23px; letter-spacing:.03em; text-transform:uppercase;}
@@ -53,22 +54,27 @@
   .muted{color:var(--dim);}
 
   .primary{
-    display:flex; align-items:center; justify-content:center;
-    width:100%; min-height:60px; border-radius:16px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    width:100%; min-height:62px; border-radius:16px; padding:0 14px;
     background:var(--signal); color:#12181F;
-    font-family:var(--display); font-size:24px; font-weight:700;
+    font-family:var(--display); font-size:25px; font-weight:700; line-height:1.05;
     letter-spacing:.05em; text-transform:uppercase; transition:transform .1s ease;
   }
   .primary:active{transform:scale(.985);}
+  .primary.quiet{background:var(--slab); color:var(--paper); border:1px solid var(--line);}
+  .primary.go{background:var(--work);}
   .primary[disabled]{background:var(--slab); color:var(--dim); border:1px solid var(--line);}
   .ghost{
     display:flex; align-items:center; justify-content:center; text-align:center;
     min-height:50px; border-radius:14px; border:1px solid var(--line);
-    background:var(--slab); font-size:15px; font-weight:600; color:var(--paper); flex:1; padding:0 12px;
+    background:var(--slab); font-size:15px; font-weight:600; color:var(--paper); flex:1; padding:0 10px;
   }
   .ghost:active{background:var(--slab2);}
   .ghost.warn{color:var(--danger);}
+  .ghost.sel{background:var(--paper); color:var(--ink); border-color:var(--paper);}
   .btnrow{display:flex; gap:10px; margin-top:10px;}
+  .link{font-size:14px; color:var(--dim); text-decoration:underline; text-underline-offset:3px; padding:10px 0; min-height:44px;}
+  .link.warn{color:var(--danger);}
 
   /* today */
   .count{font-family:var(--display); font-weight:700; font-size:84px; line-height:.9; letter-spacing:.01em;}
@@ -83,13 +89,14 @@
   .d7 .wd{font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.08em;}
   .d7 .dn{font-family:var(--display); font-size:20px; font-weight:600; line-height:1.2;}
   .d7 .mk{font-family:var(--display); font-size:13px; font-weight:700; letter-spacing:.06em; height:16px;}
-  .mk.s{color:var(--signal);} .mk.d{color:var(--clockc);}
+  .mk.s{color:var(--signal);} .mk.d{color:var(--clockc);} .mk.ok{color:var(--work);}
 
   .banner{display:flex; align-items:center; gap:12px; background:#2A2410; border:1px solid #5A4A12; border-radius:14px; padding:12px 14px; margin-bottom:14px;}
   .banner .txt{flex:1; font-size:14px;}
   .banner button{font-weight:600; color:var(--signal); min-height:44px; padding:0 4px;}
   .alert{background:#2B1714; border:1px solid #6A2E24; border-radius:14px; padding:14px; margin-bottom:14px; font-size:14px;}
   .alert b{color:var(--danger);}
+  .note{background:#14233A; border:1px solid #2C4468; border-radius:14px; padding:14px; font-size:14px; line-height:1.55;}
 
   /* plan */
   .field{display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:52px; border-bottom:1px solid var(--line);}
@@ -109,17 +116,101 @@
 
   .row{padding:13px 0; border-bottom:1px solid var(--line);}
   .row:last-child{border-bottom:none;}
-  .rowname{font-weight:600; font-size:15px; display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;}
+  .row.off .rowname, .row.off .tags{opacity:.4;}
+  .rowhead{display:flex; align-items:flex-start; gap:10px;}
+  .rowname{font-weight:600; font-size:15px; display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; text-align:left;}
+  button.rowname{padding:0; min-height:28px;}
   .badge{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); border:1px solid var(--line); border-radius:999px; padding:1px 7px; font-weight:600;}
   .badge.key{color:var(--signal); border-color:#5A4A12;}
+  .badge.pt{color:var(--work); border-color:#2A5A44;}
   .cue{font-size:13px; color:var(--dim); margin-top:3px;}
   .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
   .tag{
     font-family:var(--display); font-size:17px; font-weight:600; letter-spacing:.02em;
-    border:1px dashed currentColor; border-radius:8px; padding:1px 9px; min-height:30px;
+    border:1px dashed currentColor; border-radius:8px; padding:1px 9px; min-height:32px;
     display:inline-flex; align-items:center;
   }
+  button.tag{min-height:36px;}
   .t-sets{color:var(--setsc);} .t-load{color:var(--signal);} .t-work{color:var(--work);} .t-time{color:var(--clockc);}
+  .exmenu{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .exmenu .ghost{flex:1 1 45%; min-height:44px; font-size:14px;}
+  .check{
+    width:28px; height:28px; flex:none; margin-top:1px;
+    border:2px solid var(--dim); border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; line-height:1; color:var(--ink); font-weight:700;
+  }
+  .check.on{background:var(--paper); border-color:var(--paper);}
+
+  /* session */
+  .sess-top{display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--dim); min-height:30px;}
+  .exname{font-family:var(--display); font-size:42px; font-weight:700; line-height:1; margin:10px 0 4px; text-transform:uppercase; letter-spacing:.02em;}
+  .exsub{color:var(--dim); font-size:14px;}
+  .exsub b{color:var(--paper);}
+  .side{display:inline-block; font-family:var(--display); font-weight:700; font-size:22px; letter-spacing:.08em; color:var(--ink); background:var(--clockc); border-radius:8px; padding:0 10px; margin-top:8px;}
+  .stage{display:flex; align-items:center; justify-content:center; padding:14px 0;}
+  .dial{position:relative; width:min(60vw, 240px); aspect-ratio:1;}
+  .dial svg{width:100%; height:100%; transform:rotate(-90deg);}
+  .track{fill:none; stroke:var(--line); stroke-width:8;}
+  .arc{fill:none; stroke:var(--signal); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .25s linear;}
+  .dial.hold .arc{stroke:var(--work);}
+  .dial.rest .arc{stroke:var(--clockc);}
+  .dial.paused .arc{stroke:var(--dim);} .dial.paused .clock{color:var(--dim);}
+  .dial .face{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .target{font-family:var(--display); font-size:22px; font-weight:600; color:var(--signal); line-height:1;}
+  .clock{font-family:var(--display); font-size:64px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums;}
+  .phase{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim); margin-top:4px;}
+  .bigtarget{text-align:center; padding:22px 0 18px;}
+  .bigtarget .reps{font-family:var(--display); font-size:72px; font-weight:700; line-height:.95; color:var(--work);}
+  .bigtarget .reps small{font-size:28px; color:var(--dim); margin-left:6px;}
+  .bigtarget .load{margin-top:10px;}
+  .bigtarget .load .tag{font-size:24px; min-height:44px; padding:2px 14px;}
+  .bigtarget .elapsed{font-size:13px; color:var(--dim); margin-top:10px; font-variant-numeric:tabular-nums;}
+
+  .logp{background:var(--slab); border:1px solid var(--line); border-radius:16px; padding:10px 14px 12px; margin-top:12px;}
+  .logp .ttl{font-size:12px; color:var(--dim); letter-spacing:.1em; text-transform:uppercase; font-weight:600; margin-bottom:4px;}
+  .stepper{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0;}
+  .stepper .lab{font-size:14px; color:var(--dim); min-width:58px;}
+  .stepper .ctl{display:flex; align-items:center; gap:8px;}
+  .stepper .val{font-family:var(--display); font-size:30px; font-weight:700; min-width:64px; text-align:center; color:var(--work); font-variant-numeric:tabular-nums;}
+  .stepper button{width:52px; height:46px; border-radius:12px; border:1px solid var(--line); background:var(--slab2); font-size:24px; font-weight:600;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+  .chipbtn{min-height:40px; padding:0 14px; border-radius:999px; border:1px solid var(--line); background:var(--slab2); font-size:13px; font-weight:600; color:var(--dim);}
+  .chipbtn.on{background:var(--danger); border-color:var(--danger); color:#1A0F0C;}
+
+  .seq{margin-top:16px; border-top:1px solid var(--line); padding-top:10px;}
+  .seqline{display:flex; align-items:center; gap:8px; padding:3px 0; font-size:13px;}
+  .seqname{font-family:var(--display); font-size:16px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; width:96px; flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .seqname.past{color:var(--dim);}
+  .seqsets{display:flex; gap:6px; flex-wrap:wrap;}
+  .s{
+    font-family:var(--display); font-size:15px; font-weight:600; min-width:24px; height:24px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:6px; border:1px solid var(--line);
+  }
+  .s.done{color:#4E5D75; border-color:transparent; background:#141D2B;}
+  .s.skip{color:#4E5D75; border-style:dashed; text-decoration:line-through;}
+  .s.now{background:var(--signal); border-color:var(--signal); color:#12181F;}
+  .sessfoot{display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:13px; color:var(--dim);}
+
+  .scale{display:grid; grid-template-columns:repeat(11, 1fr); gap:4px; margin-top:8px;}
+  .scale.ten{grid-template-columns:repeat(10, 1fr);}
+  .scale button{min-height:44px; border-radius:9px; border:1px solid var(--line); background:var(--slab2); font-family:var(--display); font-size:19px; font-weight:600;}
+  .scale button.on{background:var(--paper); color:var(--ink); border-color:var(--paper);}
+  .fbq{margin-top:18px;}
+  .fbq .q{font-weight:600; font-size:15px;}
+  .fbq .h{font-size:12px; color:var(--dim);}
+
+  /* log */
+  .entry{background:var(--slab); border:1px solid var(--line); border-radius:14px; padding:13px 15px; margin-bottom:10px;}
+  .entry-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .entry-date{font-family:var(--display); font-size:22px; font-weight:600; letter-spacing:.03em;}
+  .entry-meta{font-size:13px; color:var(--dim);}
+  .lines{margin-top:8px; font-size:13px;}
+  .lines div{display:flex; gap:10px; padding:2px 0;}
+  .lines .n{color:var(--dim); width:96px; flex:none;}
+  .partial{color:var(--danger); font-size:11px; letter-spacing:.12em; text-transform:uppercase; margin-top:4px; font-weight:600;}
+  .del{color:var(--dim); font-size:22px; line-height:1; padding:4px 8px; min-height:40px;}
 
   /* data */
   .kv{display:flex; justify-content:space-between; gap:12px; padding:6px 0; font-size:14px;}
@@ -128,6 +219,7 @@
     width:100%; min-height:140px; margin-top:10px; font:13px/1.4 ui-monospace, Menlo, monospace;
     color:var(--paper); background:var(--slab2); border:1px solid var(--line); border-radius:12px; padding:10px;
   }
+  textarea.notes{font:16px/1.45 var(--body); min-height:90px;}
 
   /* tab bar */
   .tabbar{
@@ -166,12 +258,13 @@
   const SCHEMA = 1;               // bump when the shape of saved data changes, and add a migration
   const K = {
     data: "alaskaprep.v1.data",          // everything: settings, program, log
-    live: "alaskaprep.v1.live",          // in-progress session (phase 1)
+    live: "alaskaprep.v1.live",          // in-progress session
     undo: "alaskaprep.v1.undo",          // copy kept before an import or erase
     bad:  "alaskaprep.v1.unreadable"     // saved data that failed to load, never overwritten silently
   };
   const DAY = 864e5;
   const BACKUP_NAG_DAYS = 7;
+  const LEAD_SEC = 5;             // countdown before a timed hold or block that doesn't follow a rest
   const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
   /* ================= seed: the template, used on first run only =================
@@ -292,7 +385,7 @@
     }catch(e){}
   }
 
-  /* ================= dates (YYYY-MM-DD strings, local) ================= */
+  /* ================= small helpers ================= */
   const pad = n => String(n).padStart(2, "0");
   const ymd = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   const parseYmd = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
@@ -301,6 +394,8 @@
   const addDays = (s, n) => { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); };
   const fmtDay = s => parseYmd(s).toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
   const fmtLong = s => parseYmd(s).toLocaleDateString(undefined, { month:"long", day:"numeric", year:"numeric" });
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const clone = o => JSON.parse(JSON.stringify(o));
   function ago(ts){
     if(!ts) return "never";
     const m = Math.round((Date.now() - ts) / 60000);
@@ -311,7 +406,17 @@
     const d = Math.round(h / 24);
     return d + " day" + (d === 1 ? "" : "s") + " ago";
   }
+  function mmss(ms){
+    const t = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(t / 60), s = t % 60;
+    return m + ":" + pad(s);
+  }
+  const secLabel = s => s >= 60 && s % 60 === 0 ? s / 60 + " min" : s >= 60 ? Math.floor(s / 60) + ":" + pad(s % 60) : s + "s";
+  const durLabel = sec => { const m = Math.round(sec / 60); return m < 60 ? m + " min" : Math.floor(m / 60) + "h " + (m % 60) + "m"; };
+  const repsLabel = r => r[0] === r[1] ? String(r[0]) : r[0] + "&ndash;" + r[1];
+  const loadLabel = v => v == null ? "body wt" : v + " " + D.settings.units;
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;" })[c]); }
+  const exOf = id => D.program.exercises[id];
+  const isOn = ex => ex.enabled !== false;
 
   /* ================= program engine ================= */
   // Monday on or after (trip - weeks*7): 15 weeks before Mar 13 2027 gives Nov 30 2026.
@@ -347,6 +452,12 @@
       if(gap < 2) return "Strength days are less than 48 hours apart.";
     }
     return null;
+  }
+  const loggedOn = (s, type) => D.log.some(e => e.date === s && e.type === type);
+  function mondayOf(s){ const wd = parseYmd(s).getDay(); return addDays(s, -((wd + 6) % 7)); }
+  function strengthThisWeek(){
+    const mon = dayNum(mondayOf(todayStr()));
+    return D.log.filter(e => e.type === "strength" && dayNum(e.date) >= mon && dayNum(e.date) < mon + 7).length;
   }
 
   /* ================= backup ================= */
@@ -413,13 +524,231 @@
   function eraseAll(){
     if(!confirm("Erase all data on this phone and start from the template?\n\nAn undo copy is kept on this phone, but save a backup file first if in doubt.")) return;
     rawSet(K.undo, JSON.stringify(D));
-    rawDel(K.live);
+    rawDel(K.live); L = null;
     D = seed(); persist(false);
     toast("Erased. Undo is in Data."); render();
   }
 
+  /* ================= sound ================= */
+  let actx = null;
+  function unlockAudio(){
+    if(actx){ if(actx.state === "suspended") actx.resume(); return; }
+    try{
+      const C = window.AudioContext || window.webkitAudioContext;
+      if(!C) return;
+      actx = new C();
+      const b = actx.createBuffer(1, 1, 22050), s = actx.createBufferSource();
+      s.buffer = b; s.connect(actx.destination); s.start(0);
+    }catch(e){ actx = null; }
+  }
+  function tone(freq, at, dur, vol){
+    if(!actx || !D.settings.sound) return;
+    const t0 = actx.currentTime + at;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  const beepGo   = () => { tone(880, 0, 0.18, 0.35); tone(1318, 0.16, 0.24, 0.35); };   // two rising tones: work starts
+  const beepHold = () => { tone(1046, 0, 0.14, 0.3); tone(1046, 0.18, 0.2, 0.3); };     // double tone: hold or block ends
+  const beepTick = () => tone(660, 0, 0.07, 0.12);                                      // quiet 3-2-1
+  const beepDone = () => { tone(659, 0, 0.16, 0.3); tone(880, 0.15, 0.16, 0.3); tone(1174, 0.3, 0.45, 0.32); };
+  const cueDown  = () => tone(520, 0, 0.12, 0.22);
+  const cueTick  = () => tone(440, 0, 0.05, 0.1);
+  const cueUp    = () => tone(780, 0, 0.1, 0.22);
+
+  /* ================= wake lock ================= */
+  let wake = null;
+  function keepAwake(on){
+    try{
+      if(on && navigator.wakeLock && !wake){
+        navigator.wakeLock.request("screen").then(w => {
+          wake = w; w.addEventListener("release", () => { wake = null; });
+        }).catch(() => {});
+      } else if(!on && wake){ wake.release().catch(() => {}); wake = null; }
+    }catch(e){}
+  }
+
+  /* ================= live session =================
+     Stages: lead (countdown) -> work (reps, untimed) | hold | timed -> [switch sides] -> rest -> next step ... -> feedback.
+     All timers are wall-clock: endsAt timestamps, replayed by catchUp() after the screen wakes. */
+  let L = null;
+
+  function saveLive(){ if(L) rawSet(K.live, JSON.stringify(L)); else rawDel(K.live); }
+
+  function buildStrength(off){
+    const P = D.program, taper = statusOn(todayStr()).phase === "taper";
+    const rx = {}, steps = [];
+    for(const id of P.sessions.strength.items){
+      const ex = P.exercises[id];
+      if(!ex || !isOn(ex) || off[id]) continue;
+      const c = clone(ex);
+      if(taper && c.kind !== "time") c.sets = Math.max(1, c.sets - 1);
+      rx[id] = c;
+      for(let s = 1; s <= c.sets; s++) steps.push({ ex: id, set: s, of: c.sets });
+    }
+    return { rx, steps, taper };
+  }
+
+  function startStrength(off){
+    const b = buildStrength(off);
+    if(!b.steps.length){ toast("Nothing selected"); return; }
+    const st = statusOn(todayStr());
+    unlockAudio();
+    L = {
+      type: "strength", date: todayStr(), week: st.week || null, phase: st.phase, taper: b.taper,
+      startedAt: Date.now(), rx: b.rx, steps: b.steps, restSec: D.settings.restSec,
+      i: 0, next: null, side: null, stage: "lead", t: null, workStartedAt: null, lastCue: null,
+      results: {}, fb: null
+    };
+    S.prep = null;
+    enterStep(0, true);
+    keepAwake(true); saveLive(); render();
+  }
+
+  const curStep = () => L.steps[L.i];
+  const curEx = () => L.rx[curStep().ex];
+
+  function startTimer(sec, from){
+    const t0 = from || Date.now();
+    L.t = { totalMs: sec * 1000, endsAt: t0 + sec * 1000, leftMs: null, running: true, lastWhole: sec };
+  }
+  function remaining(){
+    const t = L && L.t;
+    if(!t) return 0;
+    return t.running ? Math.max(0, t.endsAt - Date.now()) : Math.max(0, t.leftMs || 0);
+  }
+  function elapsedInTimer(){ return L.t ? Math.round((L.t.totalMs - remaining()) / 1000) : 0; }
+
+  function enterStep(i, withLead, from){
+    L.i = i; L.next = null;
+    const st = L.steps[i], ex = L.rx[st.ex];
+    L.side = ex.sides === 2 ? "L" : null;
+    L.results[i] = {
+      ex: st.ex, set: st.set, load: ex.kind === "reps" ? (ex.load == null ? null : ex.load) : null,
+      target: ex.kind === "reps" ? ex.reps.slice() : ex.kind === "hold" ? ex.holdSec : ex.durationSec,
+      parts: {}, formSlipped: false, pain: false
+    };
+    if(withLead && ex.kind !== "reps"){ L.stage = "lead"; startTimer(LEAD_SEC, from); }
+    else beginWork(from);
+  }
+  function beginWork(from){
+    const ex = curEx();
+    L.lastCue = null;
+    if(ex.kind === "reps"){ L.stage = "work"; L.t = null; L.workStartedAt = from || Date.now(); }
+    else if(ex.kind === "hold"){ L.stage = "hold"; startTimer(ex.holdSec, from); }
+    else { L.stage = "timed"; startTimer(ex.durationSec, from); }
+  }
+  // One side (or the whole set) is finished. amount = reps, hold seconds or block seconds.
+  function partDone(amount, from){
+    const ex = curEx(), r = L.results[L.i], key = L.side || "B";
+    r.parts[key] = ex.kind === "reps" ? { reps: amount } : ex.kind === "hold" ? { holdSec: amount } : { durationSec: amount };
+    if(L.side === "L"){
+      L.side = "R";
+      if(ex.kind === "reps"){ L.stage = "work"; L.t = null; L.workStartedAt = Date.now(); L.lastCue = null; }
+      else { L.stage = "switch"; L.t = null; }          // wait for a tap: switch sides is manual
+      return;
+    }
+    finishStep(from);
+  }
+  function finishStep(from){
+    if(L.i >= L.steps.length - 1){ toFeedback(); return; }
+    if(curEx().kind === "time"){ enterStep(L.i + 1, true, from); return; }   // no rest after the warm-up
+    L.stage = "rest"; L.next = L.i + 1; startTimer(L.restSec, from);
+  }
+  function expire(){
+    const from = L.t.endsAt;
+    const quiet = Date.now() - from > 1500;          // caught up after a lock: don't fire a burst of beeps
+    if(L.stage === "lead"){ if(!quiet) beepGo(); beginWork(from); }
+    else if(L.stage === "hold"){ if(!quiet) beepHold(); partDone(curEx().holdSec, from); }
+    else if(L.stage === "timed"){ if(!quiet) beepHold(); partDone(curEx().durationSec, from); }
+    else if(L.stage === "rest"){ if(!quiet) beepGo(); enterStep(L.next, false, from); }
+    else { L.t = null; }
+    saveLive();
+  }
+  function catchUp(){
+    let guard = 0;
+    while(L && L.t && L.t.running && remaining() <= 0 && guard++ < 200) expire();
+  }
+  function pauseTimer(){
+    const t = L.t; if(!t || !t.running) return;
+    t.leftMs = Math.max(0, t.endsAt - Date.now()); t.running = false; t.endsAt = null;
+    saveLive(); render();
+  }
+  function resumeTimer(){
+    const t = L.t; if(!t || t.running) return;
+    t.endsAt = Date.now() + (t.leftMs || 0); t.leftMs = null; t.running = true;
+    saveLive(); render();
+  }
+  function addTime(sec){
+    const t = L.t; if(!t) return;
+    if(t.running) t.endsAt = Math.max(Date.now(), t.endsAt + sec * 1000);
+    else t.leftMs = Math.max(0, (t.leftMs || 0) + sec * 1000);
+    t.totalMs = Math.max(1000, t.totalMs + sec * 1000);
+    saveLive(); render();
+  }
+  function endTimerNow(){
+    if(!L.t) return;
+    L.t.running = true; L.t.endsAt = Date.now(); L.t.leftMs = null;
+    expire(); render();
+  }
+  // The exercise the controls act on: the upcoming one during rest, otherwise the current one.
+  const focusIndex = () => L.stage === "rest" ? L.next : L.i;
+  function firstIndexOf(i){ const ex = L.steps[i].ex; while(i > 0 && L.steps[i - 1].ex === ex) i--; return i; }
+  function skipExercise(){
+    let k = focusIndex();
+    const ex = L.steps[k].ex;
+    while(k < L.steps.length && L.steps[k].ex === ex){
+      const r = L.results[k];
+      if(!r || !Object.keys(r.parts).length) L.results[k] = { ex, set: L.steps[k].set, skipped: true, parts: {} };
+      k++;
+    }
+    toast("Skipped " + L.rx[ex].name);
+    if(k >= L.steps.length){ toFeedback(); }
+    else if(L.stage === "rest"){ L.next = k; }
+    else enterStep(k, true);
+    saveLive(); render();
+  }
+  function previousExercise(){
+    const a = firstIndexOf(focusIndex());
+    const target = a > 0 ? firstIndexOf(a - 1) : 0;
+    enterStep(target, true);
+    saveLive(); render();
+  }
+  function toFeedback(){
+    L.stage = "feedback"; L.t = null; L.endedAt = Date.now();
+    L.fb = L.fb || { effort: null, fatigue: null, knee: null, back: null, notes: "" };
+    keepAwake(false); beepDone();
+  }
+  const setsDone = res => Object.values(res).filter(r => !r.skipped && Object.keys(r.parts).length).length;
+  function saveSession(){
+    const sets = L.steps.map((st, idx) => L.results[idx] ? clone(L.results[idx]) : { ex: st.ex, set: st.set, skipped: true, parts: {} });
+    const entry = {
+      id: uid(), type: "strength", date: L.date, week: L.week, phase: L.phase, taper: L.taper,
+      startedAt: L.startedAt, endedAt: L.endedAt || Date.now(), restSec: L.restSec,
+      exercises: Object.values(L.rx).map(x => ({ id: x.id, name: x.name, short: x.short || x.name, kind: x.kind, sides: x.sides, heightIn: x.heightIn == null ? null : x.heightIn })),
+      sets, feedback: clone(L.fb), nextDay: null
+    };
+    D.log.unshift(entry);
+    persist();
+    L = null; saveLive();
+    S.view = "log"; toast("Session saved"); render(); window.scrollTo(0, 0);
+  }
+  function endSession(){
+    if(L.stage === "feedback") return;
+    const n = setsDone(L.results);
+    if(!n){
+      if(confirm("Discard this session? Nothing has been logged yet.")){ L = null; saveLive(); keepAwake(false); render(); }
+      return;
+    }
+    if(confirm("End the session now? The " + n + " set" + (n === 1 ? "" : "s") + " done so far are kept.")){ toFeedback(); saveLive(); render(); }
+  }
+
   /* ================= view state ================= */
-  const S = { view: "today", pasteOpen: false };
+  const S = { view: "today", pasteOpen: false, prep: null, openEx: null };
 
   /* ================= icons ================= */
   const ICON = {
@@ -429,13 +758,12 @@
     data:  '<svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 16v3h14v-3"/></svg>'
   };
 
-  /* ================= views ================= */
+  /* ================= views: shared ================= */
   const app = document.getElementById("app");
 
   function header(){
     return '<div class="top"><div class="wordmark">Alaska <span>Prep</span></div></div>';
   }
-
   function backupBanner(){
     if(!backupDue()) return "";
     const last = D.meta.lastBackupAt;
@@ -444,7 +772,6 @@
       ' Your log lives only on this phone.</div>' +
       '<button data-act="backup">Back up</button></div>';
   }
-
   function problemAlert(){
     if(!loadProblem && rawGet(K.bad) == null) return "";
     return '<div class="alert"><b>Saved data couldn&rsquo;t be read.</b> ' +
@@ -454,45 +781,235 @@
       '<button class="ghost warn" data-act="discardbad">Discard it</button></div></div>';
   }
 
+  /* ================= views: today ================= */
+  function nextDayCard(){
+    const y = addDays(todayStr(), -1);
+    const e = D.log.find(x => x.date === y && (x.type === "strength" || x.type === "descent") && x.nextDay == null);
+    if(!e) return "";
+    return '<div class="card" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px">' +
+      '<div style="font-weight:600">After yesterday&rsquo;s session: any unusual soreness or symptoms?</div>' +
+      '<button class="del" data-act="nd" data-id="' + e.id + '" data-v="skip" aria-label="Dismiss">&times;</button></div>' +
+      '<div class="btnrow"><button class="ghost" data-act="nd" data-id="' + e.id + '" data-v="ok">All normal</button>' +
+      '<button class="ghost" data-act="nd" data-id="' + e.id + '" data-v="off">Something&rsquo;s off</button></div></div>';
+  }
+
   function todayView(){
     const t = todayStr(), st = statusOn(t), P = D.program;
     let status;
     if(st.phase === "before") status = 'Block starts <b>' + fmtDay(P.startDate) + '</b>, in ' + st.toStart + ' day' + (st.toStart === 1 ? "" : "s");
-    else if(st.phase === "block") status = '<b>Week ' + st.week + '</b> of ' + P.weeks;
+    else if(st.phase === "block") status = '<b>Week ' + st.week + '</b> of ' + P.weeks + ' &middot; ' + strengthThisWeek() + ' of ' + P.days.strength.length + ' strength';
     else if(st.phase === "taper") status = '<b>Taper</b> &middot; week ' + st.week + ' of ' + P.weeks;
     else if(st.phase === "done") status = 'Block finished';
     else status = 'Trip day has passed';
 
     const planned = plannedOn(t);
-    const todayCard = '<div class="card">' +
-      '<div class="muted" style="font-size:13px">Today, ' + fmtDay(t) + '</div>' +
-      '<div class="todayname" style="margin:6px 0 14px">' +
-        (planned ? esc(P.sessions[planned].name) : (st.phase === "before" ? "No program yet" : "Rest day")) + '</div>' +
-      (planned
-        ? '<button class="primary" disabled>Session runner comes in step 1</button>'
-        : '<div class="sub" style="margin-top:0">' + (st.phase === "before"
-            ? "Pump foiling, MTB and easy aerobic work count. Activity logging arrives in a later step."
-            : "Easy aerobic activity or ski days can be logged here soon.") + '</div>') +
-      '</div>';
+    const doneStrength = loggedOn(t, "strength");
+    let body;
+    if(planned === "strength" && !doneStrength){
+      body = '<button class="primary" data-act="prep">Start strength</button>';
+    } else if(planned === "strength"){
+      body = '<div class="sub" style="margin-top:0"><span style="color:var(--work)">&#10003; Done.</span> Nice work.</div>';
+    } else if(planned === "descent"){
+      body = '<button class="primary" disabled>Descent runner comes in step 2</button>';
+    } else {
+      body = '<div class="sub" style="margin-top:0">' + (st.phase === "before"
+        ? "Pump foiling, MTB and easy aerobic work count. Activity logging arrives in a later step."
+        : "Easy aerobic activity or ski days can be logged here soon.") + '</div>';
+    }
+    const extra = planned !== "strength"
+      ? '<button class="link" data-act="prep" style="margin-top:6px">Start a strength session anyway</button>' : "";
+    const title = planned ? P.sessions[planned].name : (st.phase === "before" ? "No program yet" : "Rest day");
 
     let days = "";
     for(let i = 0; i < 7; i++){
-      const d = addDays(t, i), p = plannedOn(d);
+      const d = addDays(t, i), p = plannedOn(d), did = p && loggedOn(d, p);
       days += '<div class="d7 ' + (i === 0 ? "now" : "") + '">' +
         '<div class="wd">' + WD[parseYmd(d).getDay()] + '</div>' +
         '<div class="dn">' + parseYmd(d).getDate() + '</div>' +
-        '<div class="mk ' + (p === "strength" ? "s" : p === "descent" ? "d" : "") + '">' +
-          (p === "strength" ? "STR" : p === "descent" ? "DSC" : "") + '</div></div>';
+        '<div class="mk ' + (did ? "ok" : p === "strength" ? "s" : p === "descent" ? "d" : "") + '">' +
+          (did ? "&#10003;" : p === "strength" ? "STR" : p === "descent" ? "DSC" : "") + '</div></div>';
     }
 
-    return header() + problemAlert() + backupBanner() +
+    return header() + problemAlert() + backupBanner() + nextDayCard() +
       '<div class="count">' + Math.max(0, st.toTrip) + '<small>days</small></div>' +
       '<div class="sub">to Alaska &middot; ' + fmtLong(P.tripDate) + '</div>' +
       '<div class="status">' + status + '</div>' +
-      '<p class="eyebrow">Today</p>' + todayCard +
+      '<p class="eyebrow">Today</p>' +
+      '<div class="card"><div class="muted" style="font-size:13px">' + fmtDay(t) + '</div>' +
+        '<div class="todayname" style="margin:6px 0 14px">' + esc(title) + '</div>' + body + extra + '</div>' +
       '<p class="eyebrow">Next 7 days</p><div class="week7">' + days + '</div>';
   }
 
+  /* ================= views: session prep ================= */
+  function prepView(){
+    const P = D.program, off = S.prep.off;
+    const b = buildStrength(off);
+    const rows = P.sessions.strength.items.map(id => {
+      const ex = P.exercises[id];
+      if(!ex || !isOn(ex)) return "";
+      const on = !off[id];
+      const sets = b.rx[id] ? b.rx[id].sets : (b.taper && ex.kind !== "time" ? Math.max(1, ex.sets - 1) : ex.sets);
+      return '<div class="row ' + (on ? "" : "off") + '"><div class="rowhead">' +
+        '<button class="check ' + (on ? "on" : "") + '" data-act="prepoff" data-id="' + id + '" aria-label="Include ' + esc(ex.name) + '">' + (on ? "&#10003;" : "") + '</button>' +
+        '<div style="flex:1"><div class="rowname">' + esc(ex.name) + (ex.optional ? '<span class="badge">Optional</span>' : "") + '</div>' +
+        '<div class="tags">' + exTags(Object.assign({}, ex, { sets }), false) + '</div></div></div></div>';
+    }).join("");
+    const ptCue = D.settings.ptCueSeen ? "" :
+      '<div class="note" style="margin-bottom:14px"><b>Effort versus pain.</b> Burning, heavy or tired muscles are expected and fine. ' +
+      'Sharp pain, pain in the knee or back joint itself, or pain or tingling that travels down a leg is not. Stop that exercise, ' +
+      'mark it in the log, and skip it until it settles or a PT has looked at it.' +
+      '<div class="btnrow"><button class="ghost" data-act="ptseen">Got it, don&rsquo;t show again</button></div></div>';
+    return header() + ptCue +
+      '<p class="eyebrow" style="margin-top:0">Strength session' + (b.taper ? " &middot; taper, one fewer set" : "") + '</p>' +
+      '<div class="card" style="padding-top:2px;padding-bottom:2px">' + rows + '</div>' +
+      '<div class="fine">Untick anything you want to leave out today. Rest ' + D.settings.restSec + ' sec between sets. Finish each set with about two good reps left.</div>' +
+      '<div style="height:16px"></div>' +
+      '<button class="primary" data-act="start"' + (b.steps.length ? "" : " disabled") + '>Start &middot; ' + b.steps.length + ' sets</button>' +
+      '<div style="text-align:center"><button class="link" data-act="prepcancel">Cancel</button></div>';
+  }
+
+  /* ================= views: live session ================= */
+  function dialHTML(cls, top, phase){
+    const t = L.t, left = remaining(), C = 2 * Math.PI * 116;
+    const frac = t && t.totalMs ? Math.max(0, Math.min(1, left / t.totalMs)) : 0;
+    return '<div class="stage"><div class="dial ' + cls + (t && !t.running ? " paused" : "") + '">' +
+        '<svg viewBox="0 0 260 260" aria-hidden="true">' +
+          '<circle class="track" cx="130" cy="130" r="116"></circle>' +
+          '<circle class="arc" id="arc" cx="130" cy="130" r="116" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - frac)).toFixed(1) + '"></circle>' +
+        '</svg>' +
+        '<div class="face"><div class="target">' + top + '</div>' +
+          '<div class="clock" id="clock">' + mmss(left) + '</div>' +
+          '<div class="phase">' + (t && !t.running ? "Paused" : phase) + '</div></div>' +
+      '</div></div>';
+  }
+  function seqStrip(){
+    const groups = [];
+    let last = null;
+    L.steps.forEach((st, idx) => {
+      if(!last || last.ex !== st.ex){ last = { ex: st.ex, items: [] }; groups.push(last); }
+      last.items.push(idx);
+    });
+    const now = L.stage === "rest" ? L.next : L.stage === "feedback" ? -1 : L.i;
+    return '<div class="seq">' + groups.map(g => {
+      const allPast = g.items.every(idx => L.results[idx] && (L.results[idx].skipped || Object.keys(L.results[idx].parts).length === (L.rx[g.ex].sides === 2 ? 2 : 1)) && idx !== now);
+      return '<div class="seqline"><div class="seqname ' + (allPast ? "past" : "") + '">' + esc(L.rx[g.ex].short || L.rx[g.ex].name) + '</div><div class="seqsets">' +
+        g.items.map(idx => {
+          const r = L.results[idx];
+          let cls = "";
+          if(idx === now) cls = "now";
+          else if(r && r.skipped) cls = "skip";
+          else if(r && Object.keys(r.parts).length) cls = "done";
+          return '<span class="s ' + cls + '">' + L.steps[idx].set + '</span>';
+        }).join("") + '</div></div>';
+    }).join("") + '</div>';
+  }
+  function sessTop(){
+    const n = setsDone(L.results);
+    return '<div class="sess-top"><span id="elapsed">' + durLabel(Math.round((Date.now() - L.startedAt) / 1000)) + '</span>' +
+      '<span>' + n + ' of ' + L.steps.length + ' sets</span></div>';
+  }
+  function sessFoot(){
+    return seqStrip() +
+      '<div class="sessfoot"><button class="link" data-act="sound">Sound ' + (D.settings.sound ? "on" : "off") + '</button>' +
+      '<button class="link warn" data-act="end">End session</button></div>';
+  }
+  function navRow(){
+    return '<div class="btnrow"><button class="ghost" data-act="prev">&larr; Previous</button>' +
+      '<button class="ghost" data-act="skip">Skip exercise</button></div>';
+  }
+  function exHeader(ex, st){
+    return '<div class="exname">' + esc(ex.name) + '</div>' +
+      '<div class="exsub">Set <b>' + st.set + '</b> of ' + st.of + (ex.heightIn != null ? ' &middot; ' + ex.heightIn + ' in' : "") + ' &middot; ' + esc(ex.cue) + '</div>' +
+      (L.side ? '<div class="side">' + (L.side === "L" ? "LEFT" : "RIGHT") + '</div>' : "");
+  }
+
+  function logPanel(idx){
+    const r = L.results[idx], ex = L.rx[r.ex];
+    const keys = Object.keys(r.parts).sort();      // B, L, R
+    const rows = keys.map(k => {
+      const p = r.parts[k], lab = k === "L" ? "Left" : k === "R" ? "Right" : ex.kind === "reps" ? "Reps" : "Seconds";
+      const field = ex.kind === "reps" ? "reps" : ex.kind === "hold" ? "holdSec" : "durationSec";
+      const step = ex.kind === "reps" ? 1 : 5;
+      return '<div class="stepper"><span class="lab">' + lab + '</span><div class="ctl">' +
+        '<button data-act="adj" data-k="' + k + '" data-f="' + field + '" data-d="-' + step + '" aria-label="Less">&minus;</button>' +
+        '<span class="val">' + p[field] + (ex.kind === "reps" ? "" : "s") + '</span>' +
+        '<button data-act="adj" data-k="' + k + '" data-f="' + field + '" data-d="' + step + '" aria-label="More">+</button></div></div>';
+    }).join("");
+    return '<div class="logp"><div class="ttl">Just done: ' + esc(ex.short || ex.name) + ' set ' + r.set + ' &middot; adjust if needed</div>' + rows +
+      (ex.kind === "reps" ? '<div class="stepper"><span class="lab">Weight</span><button class="tag t-load" data-act="setload" data-idx="' + idx + '">' + loadLabel(r.load) + '</button></div>' : "") +
+      '<div class="chips"><button class="chipbtn ' + (r.formSlipped ? "on" : "") + '" data-act="flag" data-f="formSlipped">Form slipped</button>' +
+      '<button class="chipbtn ' + (r.pain ? "on" : "") + '" data-act="flag" data-f="pain">Pain</button></div></div>';
+  }
+
+  function sessionView(){
+    if(L.stage === "feedback") return feedbackView();
+    const st = curStep(), ex = curEx();
+    let mid = "";
+
+    if(L.stage === "lead"){
+      mid = exHeader(ex, st) + dialHTML("", "Get set", "Starting") +
+        '<button class="primary" data-act="now">Start now</button>' + navRow();
+    }
+    else if(L.stage === "work"){
+      const sideLabel = L.side === "L" ? "Left done &rarr; switch" : L.side === "R" ? "Right done" : "Set done";
+      mid = exHeader(ex, st) +
+        '<div class="bigtarget"><div class="reps">' + repsLabel(ex.reps) + '<small>reps</small></div>' +
+        '<div class="load"><button class="tag t-load" data-act="setload" data-idx="' + L.i + '">' + loadLabel(ex.load) + '</button></div>' +
+        '<div class="elapsed" id="clock">0:00</div></div>' +
+        '<button class="primary go" data-act="done">' + sideLabel + '</button>' +
+        '<div class="btnrow"><button class="ghost ' + (D.settings.lowerCue ? "sel" : "") + '" data-act="lowercue">3-sec lowering cue</button></div>' +
+        navRow();
+    }
+    else if(L.stage === "hold" || L.stage === "timed"){
+      const top = L.stage === "hold" ? "Hold " + secLabel(ex.holdSec) : secLabel(ex.durationSec);
+      mid = exHeader(ex, st) + dialHTML(L.stage === "hold" ? "hold" : "", top, L.stage === "hold" ? "Holding" : "Remaining") +
+        '<button class="primary quiet" data-act="' + (L.t.running ? "pause" : "resume") + '">' + (L.t.running ? "Pause" : "Resume") + '</button>' +
+        '<div class="btnrow"><button class="ghost" data-act="early">' + (L.stage === "hold" ? "Stopped early" : "Done") + '</button>' +
+        '<button class="ghost" data-act="add" data-s="10">+10 sec</button></div>' + navRow();
+    }
+    else if(L.stage === "switch"){
+      mid = exHeader(ex, st) +
+        '<div class="bigtarget"><div class="reps" style="color:var(--clockc)">Switch</div><div class="sub">Left side logged. Get into position for the right.</div></div>' +
+        '<button class="primary" data-act="switchgo">Start right side</button>' + navRow();
+    }
+    else if(L.stage === "rest"){
+      const n = L.steps[L.next], nx = L.rx[n.ex];
+      const what = nx.kind === "reps" ? repsLabel(nx.reps) + " reps" + (nx.load != null ? " &middot; " + loadLabel(nx.load) : "")
+        : nx.kind === "hold" ? "hold " + secLabel(nx.holdSec) : secLabel(nx.durationSec);
+      mid = '<div class="exname">Rest</div>' +
+        '<div class="exsub">Next: <b>' + esc(nx.name) + '</b>, set ' + n.set + ' of ' + n.of + ' &middot; ' + what +
+          (nx.kind === "hold" ? ' &middot; <b>starts on the beep</b>' : "") + '</div>' +
+        dialHTML("rest", "Rest", "Until next set") +
+        '<div class="btnrow" style="margin-top:0"><button class="ghost" data-act="add" data-s="-15">&minus;15</button>' +
+          '<button class="ghost" data-act="add" data-s="15">+15</button>' +
+          '<button class="ghost" data-act="' + (L.t.running ? "pause" : "resume") + '">' + (L.t.running ? "Pause" : "Resume") + '</button>' +
+          '<button class="ghost" data-act="now">Go</button></div>' +
+        logPanel(L.i) + navRow();
+    }
+    return sessTop() + mid + sessFoot();
+  }
+
+  function scale(field, from){
+    const v = L.fb[field];
+    let h = "";
+    for(let n = from; n <= 10; n++) h += '<button class="' + (v === n ? "on" : "") + '" data-act="fb" data-f="' + field + '" data-v="' + n + '">' + n + '</button>';
+    return '<div class="scale' + (from === 1 ? " ten" : "") + '">' + h + '</div>';
+  }
+  function feedbackView(){
+    const n = setsDone(L.results), mins = Math.round(((L.endedAt || Date.now()) - L.startedAt) / 60000);
+    return '<div class="exname" style="margin-top:4px">Session done</div>' +
+      '<div class="exsub">' + n + ' of ' + L.steps.length + ' sets &middot; ' + mins + ' min</div>' +
+      '<div class="fbq"><div class="q">Overall effort</div><div class="h">1 easy, 10 maximal</div>' + scale("effort", 1) + '</div>' +
+      '<div class="fbq"><div class="q">Leg muscle fatigue</div><div class="h">1 fresh, 10 wrecked</div>' + scale("fatigue", 1) + '</div>' +
+      '<div class="fbq"><div class="q">Knee discomfort</div><div class="h">0 none</div>' + scale("knee", 0) + '</div>' +
+      '<div class="fbq"><div class="q">Back discomfort</div><div class="h">0 none</div>' + scale("back", 0) + '</div>' +
+      '<div class="fbq"><div class="q">Notes</div><textarea class="notes" id="fbnotes" placeholder="Anything worth remembering">' + esc(L.fb.notes || "") + '</textarea></div>' +
+      '<div style="height:14px"></div><button class="primary" data-act="savesess">Save to log</button>' +
+      '<div style="text-align:center"><button class="link warn" data-act="discard">Discard session</button></div>' +
+      seqStrip();
+  }
+
+  /* ================= views: plan ================= */
   function dayButtons(kind){
     const on = D.program.days[kind];
     let h = "";
@@ -503,29 +1020,40 @@
     return '<div class="days">' + h + '</div>';
   }
 
-  function exTags(ex){
-    const u = D.settings.units, side = ex.sides === 2 ? "/side" : "";
-    let h = '<span class="tag t-sets">' + ex.sets + ' set' + (ex.sets === 1 ? "" : "s") + '</span>';
+  function exTags(ex, editable){
+    const T = (f, cls, txt) => editable
+      ? '<button class="tag ' + cls + '" data-act="edit" data-id="' + ex.id + '" data-f="' + f + '">' + txt + '</button>'
+      : '<span class="tag ' + cls + '">' + txt + '</span>';
+    const side = ex.sides === 2 ? "/side" : "";
+    let h = T("sets", "t-sets", ex.sets + " set" + (ex.sets === 1 ? "" : "s"));
     if(ex.kind === "reps"){
-      const r = ex.reps[0] === ex.reps[1] ? ex.reps[0] : ex.reps[0] + "&ndash;" + ex.reps[1];
-      if(ex.load != null) h += '<span class="tag t-load">' + ex.load + ' ' + u + '</span>';
-      h += '<span class="tag t-work">' + r + ' reps' + side + '</span>';
+      h += T("load", "t-load", loadLabel(ex.load));
+      h += T("reps", "t-work", repsLabel(ex.reps) + " reps" + side);
     } else if(ex.kind === "hold"){
-      h += '<span class="tag t-work">' + ex.holdSec + 's hold' + side + '</span>';
+      h += T("hold", "t-work", secLabel(ex.holdSec) + " hold" + side);
     } else {
-      const s = ex.durationSec;
-      h += '<span class="tag t-time">' + (s % 60 === 0 ? s / 60 + " min" : s + " sec") + '</span>';
+      h += T("duration", "t-time", secLabel(ex.durationSec));
     }
-    if(ex.heightIn != null) h += '<span class="tag t-load">' + ex.heightIn + ' in step</span>';
+    if(ex.heightIn != null) h += T("height", "t-load", ex.heightIn + " in step");
     return h;
   }
 
   function exRow(ex){
-    return '<div class="row"><div class="rowname">' + esc(ex.name) +
+    const open = S.openEx === ex.id, on = isOn(ex);
+    const pt = ex.pt === "reviewed" ? '<span class="badge pt">PT reviewed</span>' : ex.pt === "modified" ? '<span class="badge pt">PT modified</span>' : "";
+    const menu = !open ? "" : '<div class="exmenu">' +
+      '<button class="ghost" data-act="exon" data-id="' + ex.id + '">' + (on ? "Leave out" : "Include") + '</button>' +
+      '<button class="ghost" data-act="exsub" data-id="' + ex.id + '">Substitute</button>' +
+      '<button class="ghost" data-act="expt" data-id="' + ex.id + '">PT: ' + (ex.pt || "not reviewed") + '</button>' +
+      '<button class="ghost" data-act="excue" data-id="' + ex.id + '">Edit cue</button>' +
+      (ex.orig ? '<button class="ghost" data-act="exorig" data-id="' + ex.id + '">Back to ' + esc(ex.orig) + '</button>' : "") +
+      '</div>' + (ex.progression ? '<div class="fine" style="margin-top:8px">Progresses by ' + esc(ex.progression) + '.</div>' : "");
+    return '<div class="row ' + (on ? "" : "off") + '"><button class="rowname" data-act="exopen" data-id="' + ex.id + '">' + esc(ex.name) +
       (ex.key ? '<span class="badge key">Priority</span>' : "") +
-      (ex.optional ? '<span class="badge">Optional</span>' : "") + '</div>' +
+      (ex.optional ? '<span class="badge">Optional</span>' : "") + pt +
+      (on ? "" : '<span class="badge">Left out</span>') + '</button>' +
       '<div class="cue">' + esc(ex.cue) + '</div>' +
-      '<div class="tags">' + exTags(ex) + '</div></div>';
+      '<div class="tags">' + exTags(ex, true) + '</div>' + menu + '</div>';
   }
 
   function planView(){
@@ -551,7 +1079,8 @@
       '</div>' +
       '<p class="eyebrow">Strength session</p>' +
       '<div class="card" style="padding-top:2px; padding-bottom:2px">' + strength + '</div>' +
-      '<div class="fine">Rest ' + D.settings.restSec + ' sec between sets. Finish each set with about two good reps left. Editing these comes in step 1.</div>' +
+      '<div class="fine">Tap any value to change it. Tap an exercise name to leave it out, substitute it or mark it reviewed by a PT. ' +
+        'Rest between sets: <button class="tag t-time" data-act="editrest">' + D.settings.restSec + ' sec</button></div>' +
       '<p class="eyebrow">Descent simulation</p>' +
       '<div class="card"><div class="rowname">Circuit, early weeks</div>' +
         '<div class="cue">' + c.rounds + ' rounds of ' + esc(descent) + ', ' + c.workSec + ' sec each, ' + c.restSec + ' sec rest between rounds.</div>' +
@@ -559,16 +1088,53 @@
         '<div class="cue">Builds from 2 toward 6 minutes of unbroken work. Measured by time to form breakdown.</div></div>';
   }
 
+  /* ================= views: log ================= */
+  function setSummary(e, ex){
+    const sets = e.sets.filter(s => s.ex === ex.id && !s.skipped && Object.keys(s.parts).length);
+    if(!sets.length) return '<span class="muted">skipped</span>';
+    const f = ex.kind === "reps" ? "reps" : ex.kind === "hold" ? "holdSec" : "durationSec";
+    const fmt = v => v == null ? "?" : ex.kind === "reps" ? v : secLabel(v);
+    let txt;
+    if(ex.sides === 2){
+      const side = k => sets.map(s => s.parts[k] ? fmt(s.parts[k][f]) : "&ndash;").join(", ");
+      txt = "L " + side("L") + " &middot; R " + side("R");
+    } else txt = sets.map(s => fmt((s.parts.B || {})[f])).join(", ");
+    const loads = [...new Set(sets.map(s => s.load).filter(v => v != null))];
+    if(ex.kind === "reps" && loads.length) txt = loads.join("/") + " " + D.settings.units + " &middot; " + txt;
+    const flags = (sets.some(s => s.formSlipped) ? ' <span style="color:var(--danger)">form</span>' : "") +
+      (sets.some(s => s.pain) ? ' <span style="color:var(--danger)">pain</span>' : "");
+    return txt + flags;
+  }
+  function entryHTML(e){
+    if(e.type !== "strength"){
+      return '<div class="entry"><div class="entry-date">' + esc(e.title || e.type) + '</div><div class="entry-meta">' + fmtDay(e.date) + '</div></div>';
+    }
+    const done = setsDone(Object.assign({}, e.sets)), planned = e.sets.length;
+    const fb = e.feedback || {};
+    const fbBits = [["Effort", fb.effort], ["Fatigue", fb.fatigue], ["Knee", fb.knee], ["Back", fb.back]]
+      .filter(([, v]) => v != null).map(([k, v]) => k + " <b>" + v + "</b>").join(" &middot; ");
+    const nd = e.nextDay ? (e.nextDay.ok ? "Next day: all normal" : e.nextDay.skipped ? "" : "Next day: " + esc(e.nextDay.note || "something off")) : "";
+    return '<div class="entry"><div class="entry-top"><div>' +
+        '<div class="entry-date">Strength &middot; ' + fmtDay(e.date) + '</div>' +
+        '<div class="entry-meta">' + (e.week ? "Week " + e.week + " &middot; " : "") + durLabel(Math.round((e.endedAt - e.startedAt) / 1000)) + ' &middot; ' + done + '/' + planned + ' sets</div></div>' +
+        '<button class="del" data-act="del" data-id="' + e.id + '" aria-label="Delete entry">&times;</button></div>' +
+      (done < planned ? '<div class="partial">Partial</div>' : "") +
+      '<div class="lines">' + e.exercises.map(ex => '<div><span class="n">' + esc(ex.short || ex.name) + '</span><span>' + setSummary(e, ex) + '</span></div>').join("") + '</div>' +
+      (fbBits ? '<div class="entry-meta" style="margin-top:8px">' + fbBits + '</div>' : "") +
+      (fb.notes ? '<div style="font-size:14px;margin-top:6px">' + esc(fb.notes) + '</div>' : "") +
+      (nd ? '<div class="entry-meta" style="margin-top:6px">' + nd + '</div>' : "") +
+    '</div>';
+  }
   function logView(){
-    const body = D.log.length
-      ? D.log.map(e => '<div class="card"><div class="rowname">' + esc(e.title || e.type) + '</div><div class="cue">' + esc(e.date || "") + '</div></div>').join("")
-      : '<div class="empty">Nothing logged yet.<br>Workouts and activities will show up here.</div>';
+    const body = D.log.length ? D.log.map(entryHTML).join("")
+      : '<div class="empty">Nothing logged yet.<br>Finished sessions show up here.</div>';
     return header() + '<p class="eyebrow" style="margin-top:0">Log &middot; ' + D.log.length + '</p>' + body;
   }
 
+  /* ================= views: data ================= */
   function dataView(){
     const hasUndo = rawGet(K.undo) != null;
-    let bytes = 0; try{ bytes = (rawGet(K.data) || "").length; }catch(e){}
+    const bytes = (rawGet(K.data) || "").length;
     return header() + problemAlert() +
       '<p class="eyebrow" style="margin-top:0">Backup</p>' +
       '<div class="card">' +
@@ -590,6 +1156,8 @@
           '<div class="btnrow"><button class="ghost" data-act="pastego">Restore pasted text</button></div>' : "") +
         (hasUndo ? '<div class="btnrow"><button class="ghost" data-act="undo">Undo last restore or erase</button></div>' : "") +
       '</div>' +
+      '<p class="eyebrow">Sound</p>' +
+      '<div class="card"><button class="ghost" style="width:100%" data-act="sound">Beeps are ' + (D.settings.sound ? "on" : "off") + '</button></div>' +
       '<p class="eyebrow">Danger zone</p>' +
       '<div class="card"><button class="ghost warn" style="width:100%" data-act="erase">Erase all data</button></div>' +
       '<div class="fine">Everything is stored on this phone only (' + (bytes / 1024).toFixed(1) + ' KB, data version ' + D.schema + '). ' +
@@ -605,9 +1173,46 @@
   }
 
   function render(){
+    if(L){ app.className = "app live"; app.innerHTML = sessionView(); return; }
+    app.className = "app";
+    if(S.prep){ app.innerHTML = prepView(); return; }
     const v = { today: todayView, plan: planView, log: logView, data: dataView }[S.view] || todayView;
     app.innerHTML = v() + tabbar();
   }
+
+  /* ================= tick ================= */
+  function tick(){
+    if(!L) return;
+    const el = document.getElementById("elapsed");
+    if(el) el.textContent = durLabel(Math.round((Date.now() - L.startedAt) / 1000));
+
+    if(L.stage === "work"){
+      const sec = Math.floor((Date.now() - L.workStartedAt) / 1000);
+      const c = document.getElementById("clock");
+      if(c) c.textContent = mmss(sec * 1000);
+      if(D.settings.lowerCue && sec !== L.lastCue){
+        L.lastCue = sec;
+        const ph = sec % 4;                      // 3 seconds down, 1 up
+        if(ph === 0) cueDown(); else if(ph === 3) cueUp(); else cueTick();
+      }
+      return;
+    }
+    if(!L.t) return;
+    const left = remaining();
+    const c = document.getElementById("clock");
+    if(c) c.textContent = mmss(left);
+    const arc = document.getElementById("arc");
+    if(arc && L.t.totalMs){
+      const C = 2 * Math.PI * 116;
+      arc.setAttribute("stroke-dashoffset", (C * (1 - Math.max(0, Math.min(1, left / L.t.totalMs)))).toFixed(1));
+    }
+    if(!L.t.running) return;
+    const whole = Math.ceil(left / 1000);
+    if(whole < L.t.lastWhole && whole > 0 && whole <= 3) beepTick();
+    L.t.lastWhole = whole;
+    if(left <= 0){ expire(); catchUp(); render(); }
+  }
+  setInterval(tick, 200);
 
   /* ================= toast ================= */
   let toastTimer = null;
@@ -618,22 +1223,159 @@
     toastTimer = setTimeout(() => t.classList.remove("on"), 2800);
   }
 
+  /* ================= editing ================= */
+  function askNumber(label, cur, min, max){
+    const raw = prompt(label, cur == null ? "" : cur);
+    if(raw === null) return undefined;
+    const n = Number(raw.trim());
+    if(raw.trim() === "" || !isFinite(n)){ toast("Not a number"); return undefined; }
+    return Math.min(max, Math.max(min, n));
+  }
+  function editField(id, f){
+    const ex = exOf(id);
+    if(f === "reps"){
+      const raw = prompt(ex.name + ": reps, like 8-12 or 10", ex.reps[0] === ex.reps[1] ? ex.reps[0] : ex.reps.join("-"));
+      if(raw === null) return;
+      const m = raw.trim().match(/^(\d+)\s*(?:(?:-|–|to)\s*(\d+))?$/i);
+      if(!m){ toast("Use a number or a range like 8-12"); return; }
+      let a = +m[1], b = m[2] ? +m[2] : a;
+      if(b < a) [a, b] = [b, a];
+      ex.reps = [Math.max(1, a), Math.min(100, b)];
+    } else if(f === "load"){
+      const raw = prompt(ex.name + ": weight in " + D.settings.units + ". Leave empty for body weight.", ex.load == null ? "" : ex.load);
+      if(raw === null) return;
+      if(raw.trim() === "") ex.load = null;
+      else { const n = Number(raw.trim()); if(!isFinite(n) || n < 0){ toast("Not a number"); return; } ex.load = n; }
+    } else {
+      const spec = {
+        sets:     ["sets", "Sets", 1, 10],
+        hold:     ["holdSec", "Hold in seconds", 5, 600],
+        duration: ["durationSec", "Duration in seconds", 10, 3600],
+        height:   ["heightIn", "Step height in inches", 1, 36]
+      }[f];
+      const n = askNumber(ex.name + ": " + spec[1], ex[spec[0]], spec[2], spec[3]);
+      if(n === undefined) return;
+      ex[spec[0]] = Math.round(n);
+    }
+    persist(); render();
+  }
+  // Weight changed during a session: log it for this set and remember it for next time.
+  function setLoad(idx){
+    const r = L.results[idx], ex = L.rx[r.ex];
+    const raw = prompt(ex.name + ": weight in " + D.settings.units + ". Leave empty for body weight.", r.load == null ? "" : r.load);
+    if(raw === null) return;
+    let v = null;
+    if(raw.trim() !== ""){ v = Number(raw.trim()); if(!isFinite(v) || v < 0){ toast("Not a number"); return; } }
+    r.load = v; ex.load = v;
+    for(let k = idx + 1; k < L.steps.length; k++){
+      const rk = L.results[k];
+      if(rk && rk.ex === r.ex && !Object.keys(rk.parts).length) rk.load = v;
+    }
+    if(exOf(r.ex)){ exOf(r.ex).load = v; persist(); }
+    saveLive(); render();
+  }
+
   /* ================= events ================= */
   document.addEventListener("click", e => {
     const el = e.target.closest("[data-act]");
     if(!el) return;
     const act = el.dataset.act;
+    unlockAudio();
 
-    if(act === "tab"){ S.view = el.dataset.v; S.pasteOpen = false; render(); window.scrollTo(0, 0); }
+    // ---- live session ----
+    if(L){
+      if(act === "done"){ partDone(L.rx[curStep().ex].reps[1]); }
+      else if(act === "now"){ endTimerNow(); return; }
+      else if(act === "early"){ partDone(elapsedInTimer()); }
+      else if(act === "switchgo"){ L.stage = "lead"; startTimer(3); }
+      else if(act === "pause"){ pauseTimer(); return; }
+      else if(act === "resume"){ resumeTimer(); return; }
+      else if(act === "add"){ addTime(Number(el.dataset.s)); return; }
+      else if(act === "skip"){ skipExercise(); return; }
+      else if(act === "prev"){ previousExercise(); return; }
+      else if(act === "end"){ endSession(); return; }
+      else if(act === "setload"){ setLoad(Number(el.dataset.idx)); return; }
+      else if(act === "lowercue"){ D.settings.lowerCue = !D.settings.lowerCue; persist(false); }
+      else if(act === "sound"){ D.settings.sound = !D.settings.sound; persist(false); if(D.settings.sound) beepGo(); }
+      else if(act === "adj"){
+        const r = L.results[L.i], p = r.parts[el.dataset.k], f = el.dataset.f;
+        p[f] = Math.max(0, (p[f] || 0) + Number(el.dataset.d));
+      }
+      else if(act === "flag"){ const r = L.results[L.i]; r[el.dataset.f] = !r[el.dataset.f]; }
+      else if(act === "fb"){ const v = Number(el.dataset.v); L.fb[el.dataset.f] = L.fb[el.dataset.f] === v ? null : v; }
+      else if(act === "savesess"){ saveSession(); return; }
+      else if(act === "discard"){
+        if(confirm("Discard this whole session? It won't be logged.")){ L = null; saveLive(); keepAwake(false); render(); }
+        return;
+      }
+      else return;
+      saveLive(); render();
+      return;
+    }
+
+    // ---- everything else ----
+    if(act === "tab"){ S.view = el.dataset.v; S.pasteOpen = false; S.openEx = null; render(); window.scrollTo(0, 0); }
+    else if(act === "prep"){ S.prep = { off: {} }; render(); window.scrollTo(0, 0); }
+    else if(act === "prepoff"){ const id = el.dataset.id; S.prep.off[id] = !S.prep.off[id]; render(); }
+    else if(act === "prepcancel"){ S.prep = null; render(); }
+    else if(act === "ptseen"){ D.settings.ptCueSeen = true; persist(false); render(); }
+    else if(act === "start"){ startStrength(S.prep.off); window.scrollTo(0, 0); }
     else if(act === "backup"){ saveBackup(); }
     else if(act === "copy"){ copyBackup(); }
     else if(act === "pasteopen"){ S.pasteOpen = !S.pasteOpen; render(); }
     else if(act === "pastego"){ const t = document.getElementById("paste"); if(t && t.value.trim()) importText(t.value); }
     else if(act === "undo"){ undoImport(); }
     else if(act === "erase"){ eraseAll(); }
+    else if(act === "sound"){ D.settings.sound = !D.settings.sound; persist(false); if(D.settings.sound) beepGo(); render(); }
     else if(act === "exportbad"){ const raw = rawGet(K.bad); if(raw) shareFile(raw, "alaska-prep-unreadable-" + todayStr() + ".json"); }
     else if(act === "discardbad"){
       if(confirm("Delete the unreadable copy for good?")){ rawDel(K.bad); loadProblem = null; render(); }
+    }
+    else if(act === "edit"){ editField(el.dataset.id, el.dataset.f); }
+    else if(act === "editrest"){
+      const n = askNumber("Rest between sets, in seconds", D.settings.restSec, 15, 600);
+      if(n !== undefined){ D.settings.restSec = Math.round(n); persist(); render(); }
+    }
+    else if(act === "exopen"){ S.openEx = S.openEx === el.dataset.id ? null : el.dataset.id; render(); }
+    else if(act === "exon"){ const ex = exOf(el.dataset.id); ex.enabled = !isOn(ex); persist(); render(); }
+    else if(act === "expt"){
+      const ex = exOf(el.dataset.id), order = [null, "reviewed", "modified"];
+      ex.pt = order[(order.indexOf(ex.pt || null) + 1) % order.length];
+      persist(); render();
+    }
+    else if(act === "excue"){
+      const ex = exOf(el.dataset.id), v = prompt(ex.name + ": cue", ex.cue);
+      if(v !== null){ ex.cue = v.trim(); persist(); render(); }
+    }
+    else if(act === "exsub"){
+      const ex = exOf(el.dataset.id);
+      const hint = ex.alts && ex.alts.length ? " Ideas: " + ex.alts.join(", ") + "." : "";
+      const v = prompt("Substitute " + ex.name + " with what?" + hint, "");
+      if(v && v.trim()){
+        if(!ex.orig) ex.orig = ex.name;
+        ex.name = v.trim(); ex.short = ex.name.length > 13 ? ex.name.slice(0, 12) + "…" : ex.name;
+        persist(); render();
+      }
+    }
+    else if(act === "exorig"){
+      const ex = exOf(el.dataset.id);
+      ex.name = ex.orig; ex.short = ex.name.length > 13 ? ex.name.slice(0, 12) + "…" : ex.name; delete ex.orig;
+      persist(); render();
+    }
+    else if(act === "nd"){
+      const entry = D.log.find(x => x.id === el.dataset.id), v = el.dataset.v;
+      if(!entry) return;
+      if(v === "ok") entry.nextDay = { ok: true, at: Date.now() };
+      else if(v === "skip") entry.nextDay = { skipped: true, at: Date.now() };
+      else {
+        const note = prompt("What's off? Where, and how it feels.", "");
+        if(note === null) return;
+        entry.nextDay = { ok: false, note: note.trim(), at: Date.now() };
+      }
+      persist(); render();
+    }
+    else if(act === "del"){
+      if(confirm("Delete this entry from the log?")){ D.log = D.log.filter(x => x.id !== el.dataset.id); persist(); render(); }
     }
     else if(act === "day"){
       const kind = el.dataset.kind, wd = Number(el.dataset.wd), days = D.program.days;
@@ -646,6 +1388,10 @@
       if(kind === "descent" && days.strength.includes(wd)) days.strength = days.strength.filter(d => d !== wd);
       persist(); render();
     }
+  });
+
+  document.addEventListener("input", e => {
+    if(e.target.id === "fbnotes" && L && L.fb){ L.fb.notes = e.target.value; saveLive(); }
   });
 
   document.addEventListener("change", e => {
@@ -667,7 +1413,13 @@
     }
   });
 
-  document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") render(); });
+  document.addEventListener("visibilitychange", () => {
+    if(document.visibilityState !== "visible") return;
+    if(actx && actx.state === "suspended") actx.resume();
+    if(L && L.stage !== "feedback"){ keepAwake(true); catchUp(); }
+    // Don't wipe half-typed notes on the feedback screen.
+    if(!(L && L.stage === "feedback")) render();
+  });
 
   /* ================= home screen icon (drawn once, PNG so iOS accepts it) ================= */
   function drawIcon(){
@@ -689,8 +1441,25 @@
   /* ================= boot ================= */
   load();
   drawIcon();
+  (function resumeLive(){
+    const raw = rawGet(K.live);
+    if(!raw) return;
+    try{
+      const live = JSON.parse(raw);
+      if(!live || !live.steps || !live.rx) throw new Error("bad");
+      L = live;
+      if(L.stage !== "feedback"){
+        if(Date.now() - L.startedAt > 6 * 3600 * 1000){
+          // Abandoned long ago: keep what was done and go straight to the check-in.
+          if(setsDone(L.results)){ L.stage = "feedback"; L.t = null; L.endedAt = L.endedAt || Date.now(); L.fb = L.fb || { effort:null, fatigue:null, knee:null, back:null, notes:"" }; }
+          else L = null;
+        } else { keepAwake(true); catchUp(); }
+      }
+      saveLive();
+    }catch(e){ L = null; rawDel(K.live); }
+  })();
   render();
-  askPersist().then(() => { if(S.view === "data") render(); });
+  askPersist().then(() => { if(!L && S.view === "data") render(); });
 })();
 </script>
 </body>
