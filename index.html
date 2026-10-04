@@ -531,7 +531,14 @@
 
   /* ================= sound ================= */
   let actx = null;
+  // iOS mutes web audio when the ring/silent switch is on. The "playback" audio session plays through it,
+  // but, like any music app, pauses audio from other apps. "ambient" mixes with other audio but obeys silent mode.
+  const ignoresSilent = () => D.settings.ignoreSilent !== false;
+  function applyAudioSession(){
+    try{ if(navigator.audioSession) navigator.audioSession.type = ignoresSilent() ? "playback" : "ambient"; }catch(e){}
+  }
   function unlockAudio(){
+    applyAudioSession();
     if(actx){ if(actx.state === "suspended") actx.resume(); return; }
     try{
       const C = window.AudioContext || window.webkitAudioContext;
@@ -1157,7 +1164,11 @@
         (hasUndo ? '<div class="btnrow"><button class="ghost" data-act="undo">Undo last restore or erase</button></div>' : "") +
       '</div>' +
       '<p class="eyebrow">Sound</p>' +
-      '<div class="card"><button class="ghost" style="width:100%" data-act="sound">Beeps are ' + (D.settings.sound ? "on" : "off") + '</button></div>' +
+      '<div class="card"><button class="ghost" style="width:100%" data-act="sound">Beeps are ' + (D.settings.sound ? "on" : "off") + '</button>' +
+        '<div class="btnrow"><button class="ghost" style="width:100%" data-act="silent">' + (ignoresSilent() ? "Beeps play in silent mode" : "Beeps follow the silent switch") + '</button></div>' +
+        '<div class="fine" style="margin-top:10px">' + (ignoresSilent()
+          ? "Beeps sound even with the phone on silent. Like any music app, this pauses music or podcasts from other apps when a session starts."
+          : "Beeps mix with music from other apps, but stay quiet while the phone is on silent.") + '</div></div>' +
       '<p class="eyebrow">Danger zone</p>' +
       '<div class="card"><button class="ghost warn" style="width:100%" data-act="erase">Erase all data</button></div>' +
       '<div class="fine">Everything is stored on this phone only (' + (bytes / 1024).toFixed(1) + ' KB, data version ' + D.schema + '). ' +
@@ -1327,6 +1338,7 @@
     else if(act === "undo"){ undoImport(); }
     else if(act === "erase"){ eraseAll(); }
     else if(act === "sound"){ D.settings.sound = !D.settings.sound; persist(false); if(D.settings.sound) beepGo(); render(); }
+    else if(act === "silent"){ D.settings.ignoreSilent = !ignoresSilent(); persist(false); applyAudioSession(); beepGo(); render(); }
     else if(act === "exportbad"){ const raw = rawGet(K.bad); if(raw) shareFile(raw, "alaska-prep-unreadable-" + todayStr() + ".json"); }
     else if(act === "discardbad"){
       if(confirm("Delete the unreadable copy for good?")){ rawDel(K.bad); loadProblem = null; render(); }
